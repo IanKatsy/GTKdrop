@@ -1,0 +1,20 @@
+{
+  "name": "Light Cherry Chocolate",
+  "author": "hotcereal",
+  "dark": true,
+  "colors": {
+    "window_bg": "#3a2f34",
+    "window_fg": "#f6edf1",
+    "border": "#4a3a41",
+    "accent": "#e2a3be",
+    "list_header_bg": "#5a454d",
+    "row_bg": "#4a3a41",
+    "row_alt_bg": "#5f4850",
+    "row_fg": "#f6edf1",
+    "popover_bg": "#5a454d",
+    "popover_selected_bg": "#e6b4c8",
+    "success": "#d8a8bc",
+    "warning": "#e8c6b8",
+    "error": "#e08aa2"
+  }
+}

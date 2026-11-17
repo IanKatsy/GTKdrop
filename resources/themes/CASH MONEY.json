@@ -1,0 +1,20 @@
+{
+  "name": "CASH MONEY",
+  "author": "hotcereal",
+  "dark": false,
+  "colors": {
+    "window_bg": "#4fa57e",
+    "window_fg": "#0f241c",
+    "border": "#3e7f62",
+    "accent": "#0f241c",
+    "list_header_bg": "#2e5f4b",
+    "row_bg": "#6ab892",
+    "row_alt_bg": "#74c29b",
+    "row_fg": "#0f241c",
+    "popover_bg": "#2e5f4b",
+    "popover_selected_bg": "#8ad3af",
+    "success": "#ffd34e",
+    "warning": "#e67e22",
+    "error": "#c0392b"
+  }
+}

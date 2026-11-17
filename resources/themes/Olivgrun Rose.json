@@ -1,0 +1,20 @@
+{
+  "name": "Olivgrun Rose",
+  "author": "Nalicoco",
+  "dark": true,
+  "colors": {
+    "window_bg": "#2b3618",
+    "window_fg": "#f0d4d6",
+    "border": "#37441f",
+    "accent": "#d6a9ad",
+    "list_header_bg": "#4b5c2e",
+    "row_bg": "#37441f",
+    "row_alt_bg": "#2b3618",
+    "row_fg": "#f0d4d6",
+    "popover_bg": "#37441f",
+    "popover_selected_bg": "#5c7040",
+    "success": "#9db35e",
+    "warning": "#d9d79a",
+    "error": "#d9808a"
+  }
+}

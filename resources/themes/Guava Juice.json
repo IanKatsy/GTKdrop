@@ -1,0 +1,20 @@
+{
+  "name": "Guava Juice",
+  "author": "Nalicoco",
+  "dark": false,
+  "colors": {
+    "window_bg": "#fbf1ea",
+    "window_fg": "#3b4019",
+    "border": "#f8e6dc",
+    "accent": "#8e9546",
+    "list_header_bg": "#bbca6f",
+    "row_bg": "#f2cfbb",
+    "row_alt_bg": "#e9e29b",
+    "row_fg": "#3b4019",
+    "popover_bg": "#f2cfbb",
+    "popover_selected_bg": "#f1b4af",
+    "success": "#bbca6f",
+    "warning": "#e9e29b",
+    "error": "#f28892"
+  }
+}

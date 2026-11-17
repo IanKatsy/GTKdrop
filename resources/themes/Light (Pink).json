@@ -1,0 +1,20 @@
+{
+  "name": "Light (Pink)",
+  "author": "hotcereal",
+  "dark": false,
+  "colors": {
+    "window_bg": "#faf3f6",
+    "window_fg": "#3b2a31",
+    "border": "#f2e6eb",
+    "accent": "#f1b6cd",
+    "list_header_bg": "#dec9d2",
+    "row_bg": "#f2e6eb",
+    "row_alt_bg": "#f8eff3",
+    "row_fg": "#3b2a31",
+    "popover_bg": "#dec9d2",
+    "popover_selected_bg": "#f4cedc",
+    "success": "#e9b9c9",
+    "warning": "#ecd6c9",
+    "error": "#db8fa6"
+  }
+}

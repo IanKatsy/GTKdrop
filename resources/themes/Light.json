@@ -1,0 +1,19 @@
+{
+  "name": "Light",
+  "dark": false,
+  "colors": {
+    "window_bg": "#e0e0e0",
+    "window_fg": "#2a2824",
+    "border": "#a69b97",
+    "accent": "#ff9f2a",
+    "list_header_bg": "#bdb9b7",
+    "row_bg": "#e0e0e0",
+    "row_alt_bg": "#efebe9",
+    "row_fg": "#2a2824",
+    "popover_bg": "#bdb9b7",
+    "popover_selected_bg": "#efebe9",
+    "success": "#389538",
+    "warning": "#ffc107",
+    "error": "#ff0000"
+  }
+}

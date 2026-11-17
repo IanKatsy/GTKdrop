@@ -1,0 +1,20 @@
+{
+  "name": "Pink Laceleaf",
+  "author": "Nalicoco",
+  "dark": false,
+  "colors": {
+    "window_bg": "#f3eef1",
+    "window_fg": "#4a2a35",
+    "border": "#ede3e8",
+    "accent": "#d56989",
+    "list_header_bg": "#ea9caf",
+    "row_bg": "#f8e3e9",
+    "row_alt_bg": "#eaf2c8",
+    "row_fg": "#4a2a35",
+    "popover_bg": "#f8e3e9",
+    "popover_selected_bg": "#ea9caf",
+    "success": "#c2dc80",
+    "warning": "#ede59a",
+    "error": "#d56989"
+  }
+}

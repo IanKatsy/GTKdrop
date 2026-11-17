@@ -1,0 +1,20 @@
+{
+  "name": "Wisteria Garden",
+  "author": "Nalicoco",
+  "dark": false,
+  "colors": {
+    "window_bg": "#faf8ee",
+    "window_fg": "#3a2a5e",
+    "border": "#f4f0dd",
+    "accent": "#a88aed",
+    "list_header_bg": "#a88aed",
+    "row_bg": "#f4f0dd",
+    "row_alt_bg": "#e5edcb",
+    "row_fg": "#3a2a5e",
+    "popover_bg": "#f4f0dd",
+    "popover_selected_bg": "#a88aed",
+    "success": "#a6c261",
+    "warning": "#ede09a",
+    "error": "#d9778a"
+  }
+}

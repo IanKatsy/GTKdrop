@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/dev/gtkdrop/GTKdrop">
+    <file>ui/main_window.ui</file>
+    <file>style.css</file>
+    <file>images/smapi.png</file>
+    <file>themes/Buttercup Sky.json</file>
+    <file>themes/CASH MONEY.json</file>
+    <file>themes/Catpuccin Mocha.json</file>
+    <file>themes/Cerene Dark.json</file>
+    <file>themes/Cerene Light.json</file>
+    <file>themes/Dark Cherry Chocolate.json</file>
+    <file>themes/Dark.json</file>
+    <file>themes/Dragonfly Wing.json</file>
+    <file>themes/Fairy.json</file>
+    <file>themes/Forest.json</file>
+    <file>themes/Guava Juice.json</file>
+    <file>themes/Lavender Lemonade.json</file>
+    <file>themes/Light (Pink).json</file>
+    <file>themes/Light Cherry Chocolate.json</file>
+    <file>themes/Light.json</file>
+    <file>themes/Matcha Mist.json</file>
+    <file>themes/Olivgrun Rose.json</file>
+    <file>themes/Pink Laceleaf.json</file>
+    <file>themes/Solarized-Lite.json</file>
+    <file>themes/Stardrop.json</file>
+    <file>themes/Wisteria Garden.json</file>
+  </gresource>
+</gresources>

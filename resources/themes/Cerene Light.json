@@ -1,0 +1,20 @@
+{
+  "name": "Cerene Light",
+  "author": "hotcereal",
+  "dark": false,
+  "colors": {
+    "window_bg": "#f6faff",
+    "window_fg": "#1e2433",
+    "border": "#d5def0",
+    "accent": "#1e2433",
+    "list_header_bg": "#e6edff",
+    "row_bg": "#eef3ff",
+    "row_alt_bg": "#e6edff",
+    "row_fg": "#1e2433",
+    "popover_bg": "#eef3ff",
+    "popover_selected_bg": "#3fd9ff",
+    "success": "#1f9d6b",
+    "warning": "#c98a00",
+    "error": "#d64545"
+  }
+}

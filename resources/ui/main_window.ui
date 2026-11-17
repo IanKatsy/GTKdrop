@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.16"/>
+  <requires lib="libadwaita" version="1.7"/>
+
+  <!-- Stardrop's File / View / Tools / Nexus Mods menu bar, folded into a GNOME-style primary menu -->
+  <menu id="add_menu">
+    <section>
+      <item>
+        <attribute name="label">Add Mod Archives…</attribute>
+        <attribute name="action">win.add-mods</attribute>
+      </item>
+      <item>
+        <attribute name="label">Add Mod Folders…</attribute>
+        <attribute name="action">win.add-mod-folders</attribute>
+      </item>
+    </section>
+  </menu>
+
+  <menu id="primary_menu">
+    <section>
+      <attribute name="label">File</attribute>
+      <item>
+        <attribute name="label">Add Mods…</attribute>
+        <attribute name="action">win.add-mods</attribute>
+      </item>
+      <item>
+        <attribute name="label">Add Mod Folders…</attribute>
+        <attribute name="action">win.add-mod-folders</attribute>
+      </item>
+      <item>
+        <attribute name="label">Start SMAPI</attribute>
+        <attribute name="action">win.start-smapi</attribute>
+      </item>
+    </section>
+    <section>
+      <attribute name="label">View</attribute>
+      <item>
+        <attribute name="label">Settings</attribute>
+        <attribute name="action">win.settings</attribute>
+      </item>
+      <item>
+        <attribute name="label">GTKdrop Log File</attribute>
+        <attribute name="action">win.open-log</attribute>
+      </item>
+      <item>
+        <attribute name="label">SMAPI Log File</attribute>
+        <attribute name="action">win.open-smapi-log</attribute>
+      </item>
+    </section>
+    <section>
+      <attribute name="label">Tools</attribute>
+      <item>
+        <attribute name="label">Refresh Mod List</attribute>
+        <attribute name="action">win.refresh-mods</attribute>
+      </item>
+      <item>
+        <attribute name="label">Check for Mod Updates</attribute>
+        <attribute name="action">win.check-mod-updates</attribute>
+      </item>
+      <item>
+        <attribute name="label">Enable All Mods</attribute>
+        <attribute name="action">win.enable-all</attribute>
+      </item>
+      <item>
+        <attribute name="label">Disable All Mods</attribute>
+        <attribute name="action">win.disable-all</attribute>
+      </item>
+      <item>
+        <attribute name="label">Check for Stardrop Update</attribute>
+        <attribute name="action">win.check-stardrop-update</attribute>
+      </item>
+      <item>
+        <attribute name="label">Check for SMAPI Update</attribute>
+        <attribute name="action">win.check-smapi-update</attribute>
+      </item>
+      <item>
+        <attribute name="label">Stardrop Repository</attribute>
+        <attribute name="action">win.open-repository</attribute>
+      </item>
+    </section>
+    <section>
+      <attribute name="label">Nexus Mods</attribute>
+      <item>
+        <attribute name="label">API Connection</attribute>
+        <attribute name="action">win.nexus-connection</attribute>
+      </item>
+      <item>
+        <attribute name="label">Get All Updates</attribute>
+        <attribute name="action">win.nexus-install-all</attribute>
+      </item>
+      <item>
+        <attribute name="label">Get Updates for Enabled Mods</attribute>
+        <attribute name="action">win.nexus-install-enabled</attribute>
+      </item>
+      <item>
+        <attribute name="label">Collections</attribute>
+        <attribute name="action">win.collections</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label">Exit</attribute>
+        <attribute name="action">win.close</attribute>
+      </item>
+    </section>
+  </menu>
+
+  <object class="AdwApplicationWindow" id="window">
+    <property name="title">Stardrop</property>
+    <property name="default-width">1280</property>
+    <property name="default-height">780</property>
+    <property name="width-request">400</property>
+    <property name="height-request">400</property>
+
+    <property name="content">
+      <object class="AdwToolbarView">
+        <!-- A divider line under the header and above the status bar (the theme's border colour in JSON themes) -->
+        <property name="top-bar-style">raised-border</property>
+        <property name="bottom-bar-style">raised-border</property>
+
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <child type="start">
+              <object class="GtkButton">
+                <property name="icon-name">view-refresh-symbolic</property>
+                <property name="action-name">win.refresh-mods</property>
+                <property name="tooltip-text">Refresh Mod List</property>
+              </object>
+            </child>
+            <child type="start">
+              <object class="AdwSplitButton">
+                <property name="icon-name">list-add-symbolic</property>
+                <property name="action-name">win.add-mods</property>
+                <property name="tooltip-text">Add Mods (archives)</property>
+                <property name="dropdown-tooltip">More Ways to Add Mods</property>
+                <property name="menu-model">add_menu</property>
+              </object>
+            </child>
+
+            <property name="title-widget">
+              <object class="AdwWindowTitle" id="window_title">
+                <property name="title">Stardrop</property>
+                <property name="subtitle">Unknown SMAPI version</property>
+              </object>
+            </property>
+
+            <!-- End children are laid out right-to-left: the colour toggle sits in the top-right corner. -->
+            <child type="end">
+              <object class="GtkMenuButton" id="appearance_button">
+                <property name="icon-name">color-select-symbolic</property>
+                <property name="tooltip-text">Colours</property>
+                <property name="popover">
+                  <object class="GtkPopover" id="appearance_popover">
+                    <style><class name="appearance-popover"/></style>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <property name="margin-top">6</property>
+                        <property name="margin-bottom">6</property>
+                        <property name="margin-start">6</property>
+                        <property name="margin-end">6</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label">Colours</property>
+                            <property name="xalign">0</property>
+                            <style><class name="heading"/></style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwToggleGroup" id="color_source_group">
+                            <property name="homogeneous">true</property>
+                            <child>
+                              <object class="AdwToggle">
+                                <property name="name">system</property>
+                                <property name="label">System</property>
+                                <property name="tooltip">Follow the desktop's light/dark preference and accent colour</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwToggle">
+                                <property name="name">theme</property>
+                                <property name="label">Theme</property>
+                                <property name="tooltip">Use a JSON colour theme</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- System colours -->
+                        <child>
+                          <object class="GtkBox" id="style_box">
+                            <property name="spacing">12</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Style</property>
+                                <property name="hexpand">true</property>
+                                <property name="xalign">0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwToggleGroup" id="style_group">
+                                <child>
+                                  <object class="AdwToggle">
+                                    <property name="name">auto</property>
+                                    <property name="label">Auto</property>
+                                    <property name="tooltip">Follow the system</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="AdwToggle">
+                                    <property name="name">light</property>
+                                    <property name="label">Light</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="AdwToggle">
+                                    <property name="name">dark</property>
+                                    <property name="label">Dark</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <!-- JSON theme -->
+                        <child>
+                          <object class="GtkBox" id="theme_box">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkBox">
+                                <property name="spacing">12</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="label">Theme</property>
+                                    <property name="hexpand">true</property>
+                                    <property name="xalign">0</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkDropDown" id="theme_dropdown">
+                                    <property name="enable-search">true</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="action-name">win.open-themes-folder</property>
+                                <property name="halign">start</property>
+                                <style><class name="flat"/></style>
+                                <child>
+                                  <object class="AdwButtonContent">
+                                    <property name="icon-name">folder-open-symbolic</property>
+                                    <property name="label">Open Themes Folder</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkMenuButton">
+                <property name="icon-name">open-menu-symbolic</property>
+                <property name="menu-model">primary_menu</property>
+                <property name="primary">true</property>
+                <property name="tooltip-text">Main Menu</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkMenuButton" id="downloads_button">
+                <property name="icon-name">folder-download-symbolic</property>
+                <property name="tooltip-text">Downloads (0)</property>
+                <property name="popover">
+                  <object class="GtkPopover">
+                    <style><class name="downloads-popover"/></style>
+                    <child>
+                      <object class="AdwStatusPage">
+                        <property name="vexpand">true</property>
+                        <property name="icon-name">folder-download-symbolic</property>
+                        <property name="title">No Downloads</property>
+                        <property name="description">Mods downloaded from Nexus Mods show up here.</property>
+                        <style><class name="compact"/></style>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="smapi_button">
+                <property name="action-name">win.start-smapi</property>
+                <property name="tooltip-text">Start Stardew Valley through SMAPI</property>
+                <style><class name="suggested-action"/></style>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="resource">/dev/gtkdrop/GTKdrop/images/smapi.png</property>
+                        <property name="pixel-size">18</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="smapi_label">
+                        <property name="label">Start SMAPI</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+
+        <property name="content">
+          <object class="AdwToastOverlay" id="toast_overlay">
+            <property name="child">
+              <object class="GtkBox" id="content_box">
+                <property name="orientation">vertical</property>
+                <property name="spacing">12</property>
+                <property name="margin-top">12</property>
+                <property name="margin-bottom">12</property>
+                <property name="margin-start">12</property>
+                <property name="margin-end">12</property>
+
+                <!-- Profile card -->
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">6</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="toolbar-card"/>
+                    </style>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label">Profile</property>
+                        <property name="mnemonic-widget">profile_dropdown</property>
+                        <property name="margin-end">6</property>
+                        <style><class name="heading"/></style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="profile_dropdown">
+                        <property name="width-request">250</property>
+                        <property name="valign">center</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Default</item>
+                            </items>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="tooltip-text">Edit Profiles</property>
+                        <property name="action-name">win.edit-profiles</property>
+                        <property name="valign">center</property>
+                        <style><class name="flat"/></style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="label">Save Configs</property>
+                        <property name="action-name">win.save-configs</property>
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="save_profile_button">
+                        <property name="label">Save Profile</property>
+                        <property name="action-name">win.save-profile</property>
+                        <property name="valign">center</property>
+                        <property name="visible">false</property>
+                        <style><class name="suggested-action"/></style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="counts_label">
+                        <property name="hexpand">true</property>
+                        <property name="xalign">1</property>
+                        <property name="ellipsize">end</property>
+                        <style><class name="dim-label"/></style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Mod list card -->
+                <child>
+                  <object class="GtkBox" id="mod_card">
+                    <property name="vexpand">true</property>
+                    <property name="overflow">hidden</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="mod-list"/>
+                    </style>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="hexpand">true</property>
+                        <child>
+                          <object class="GtkColumnView" id="mod_view">
+                            <property name="show-row-separators">true</property>
+                            <property name="reorderable">true</property>
+                            <style><class name="data-table"/></style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+
+                <!-- Filter card: [search entry | fields] ............ [state filter]  [updatable] -->
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="toolbar-card"/>
+                    </style>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="hexpand">true</property>
+                        <property name="valign">center</property>
+                        <style><class name="linked"/></style>
+                        <child>
+                          <object class="GtkSearchEntry" id="search_entry">
+                            <property name="placeholder-text">Filter mods</property>
+                            <property name="hexpand">true</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkMenuButton" id="search_fields_button">
+                            <property name="label">No Filters Active</property>
+                            <property name="tooltip-text">Fields the filter searches (Mod Name when none are selected)</property>
+                            <property name="popover">
+                              <object class="GtkPopover">
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="spacing">2</property>
+                                    <child>
+                                      <object class="GtkCheckButton" id="field_author">
+                                        <property name="label">Author</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkCheckButton" id="field_name">
+                                        <property name="label">Mod Name</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkCheckButton" id="field_requirements">
+                                        <property name="label">Requirements</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="state_filter">
+                        <property name="valign">center</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Show All Mods</item>
+                              <item>Show Configurable Mods</item>
+                              <item>Show Disabled Mods</item>
+                              <item>Show Enabled Mods</item>
+                            </items>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="show_updatable">
+                        <property name="label">Show Updatable Mods</property>
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkCheckButton" id="show_all_sources">
+                        <property name="label">Show All Mod Sources</property>
+                        <property name="tooltip-text">Also list mods installed by collections that this profile doesn't use</property>
+                        <property name="valign">center</property>
+                        <property name="visible">false</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+
+        <!-- Status bar -->
+        <child type="bottom">
+          <object class="GtkActionBar">
+            <style><class name="status-bar"/></style>
+            <child type="start">
+              <object class="GtkButton" id="update_status_button">
+                <property name="label">Click To Check For Mod Updates</property>
+                <property name="action-name">win.check-mod-updates</property>
+                <style><class name="flat"/></style>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkLabel" id="version_label">
+                <property name="tooltip-text">GTKdrop version</property>
+                <property name="margin-start">6</property>
+                <property name="margin-end">6</property>
+                <style><class name="dim-label"/></style>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton" id="nexus_button">
+                <property name="label">Nexus Mods: Disconnected</property>
+                <property name="action-name">win.nexus-connection</property>
+                <style><class name="flat"/></style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </object>
+</interface>

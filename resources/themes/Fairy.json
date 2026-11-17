@@ -1,0 +1,20 @@
+{
+  "name": "Fairy",
+  "author": "hotcereal",
+  "dark": false,
+  "colors": {
+    "window_bg": "#f6ecef",
+    "window_fg": "#3a2a31",
+    "border": "#efe3e8",
+    "accent": "#f0b4cb",
+    "list_header_bg": "#ddd0d6",
+    "row_bg": "#efe3e8",
+    "row_alt_bg": "#f8eef2",
+    "row_fg": "#3a2a31",
+    "popover_bg": "#ddd0d6",
+    "popover_selected_bg": "#f3c9d9",
+    "success": "#e8b8c9",
+    "warning": "#ead3c6",
+    "error": "#d98aa4"
+  }
+}

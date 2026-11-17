@@ -1,0 +1,20 @@
+{
+  "name": "Buttercup Sky",
+  "author": "Nalicoco",
+  "dark": false,
+  "colors": {
+    "window_bg": "#fffae8",
+    "window_fg": "#2e4560",
+    "border": "#fff7d6",
+    "accent": "#7fa8d6",
+    "list_header_bg": "#a8c6e7",
+    "row_bg": "#fff7d6",
+    "row_alt_bg": "#fff2b2",
+    "row_fg": "#2e4560",
+    "popover_bg": "#fff7d6",
+    "popover_selected_bg": "#a8c6e7",
+    "success": "#a8c6e7",
+    "warning": "#ffe08a",
+    "error": "#e8907e"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Cerene Dark",
+  "author": "hotcereal",
+  "dark": true,
+  "colors": {
+    "window_bg": "#2b313c",
+    "window_fg": "#e6e9ef",
+    "border": "#343b48",
+    "accent": "#6fa8dc",
+    "list_header_bg": "#3a4252",
+    "row_bg": "#343b48",
+    "row_alt_bg": "#40485a",
+    "row_fg": "#e6e9ef",
+    "popover_bg": "#3a4252",
+    "popover_selected_bg": "#6fa3b8",
+    "success": "#8fd4a1",
+    "warning": "#d7d18b",
+    "error": "#d96c6c"
+  }
+}

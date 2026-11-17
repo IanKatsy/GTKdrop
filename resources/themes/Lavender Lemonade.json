@@ -1,0 +1,20 @@
+{
+  "name": "Lavender Lemonade",
+  "author": "Nalicoco",
+  "dark": false,
+  "colors": {
+    "window_bg": "#fff8dc",
+    "window_fg": "#3b3560",
+    "border": "#fff3c7",
+    "accent": "#8b82c4",
+    "list_header_bg": "#b1a9da",
+    "row_bg": "#ffeda8",
+    "row_alt_bg": "#ece9f7",
+    "row_fg": "#3b3560",
+    "popover_bg": "#ffeda8",
+    "popover_selected_bg": "#b1a9da",
+    "success": "#b1a9da",
+    "warning": "#ffeda8",
+    "error": "#e5908e"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Matcha Mist",
+  "author": "Nalicoco",
+  "dark": false,
+  "colors": {
+    "window_bg": "#f4f8e6",
+    "window_fg": "#2f3d22",
+    "border": "#edf4d3",
+    "accent": "#9dbf7c",
+    "list_header_bg": "#9dbf7c",
+    "row_bg": "#e6f0c3",
+    "row_alt_bg": "#c7ddaa",
+    "row_fg": "#2f3d22",
+    "popover_bg": "#e6f0c3",
+    "popover_selected_bg": "#c7ddaa",
+    "success": "#9dbf7c",
+    "warning": "#fff2a6",
+    "error": "#e58f7b"
+  }
+}

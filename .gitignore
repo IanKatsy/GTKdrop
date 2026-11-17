@@ -1,0 +1,13 @@
+# IDE (CLion)
+.idea/
+
+# Build output
+cmake-build-*/
+build/
+dist/
+
+# Upstream Stardrop checkout, kept for reference only (it has its own git repo)
+Stardrop/
+
+# Python
+__pycache__/

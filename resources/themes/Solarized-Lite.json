@@ -1,0 +1,19 @@
+{
+  "name": "Solarized-Lite",
+  "dark": true,
+  "colors": {
+    "window_bg": "#525252",
+    "window_fg": "#1cff96",
+    "border": "#ff9f2a",
+    "accent": "#ff9f2a",
+    "list_header_bg": "#2e2e2e",
+    "row_bg": "#6b6b6b",
+    "row_alt_bg": "#525252",
+    "row_fg": "#ffffff",
+    "popover_bg": "#2e2e2e",
+    "popover_selected_bg": "#1cff96",
+    "success": "#1cff96",
+    "warning": "#fdfd2e",
+    "error": "#f74040"
+  }
+}

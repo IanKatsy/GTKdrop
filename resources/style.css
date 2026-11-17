@@ -1,0 +1,80 @@
+/* Loaded automatically by AdwApplication (resource base path /dev/gtkdrop/GTKdrop/).
+   Spacing follows libadwaita / the BBport launcher; colours come from Adwaita's CSS
+   variables, which a JSON theme overrides. */
+
+/* A card holding a row of controls (profile bar, filter bar). */
+.card.toolbar-card {
+  padding: 6px 12px;
+  min-height: 46px;
+}
+
+/* --- Mod list ------------------------------------------------------------------ */
+
+/* Only the card's outer corners are rounded; the header buttons and rows inside are square. */
+.mod-list columnview > header > button,
+.mod-list columnview > listview > row {
+  border-radius: 0;
+}
+
+.mod-list columnview > header > button {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.mod-list columnview > listview > row > cell {
+  padding: 6px 8px;
+}
+
+.mod-list columnview entry {
+  min-height: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* --- Update status ----------------------------------------------------------------- */
+
+.mod-status-update {
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+.mod-status-unofficial {
+  color: var(--warning-color);
+  font-weight: bold;
+}
+
+.mod-status-broken {
+  color: var(--error-color);
+  font-weight: bold;
+}
+
+.mod-missing-requirements {
+  color: var(--error-color);
+}
+
+/* --- Status bar ------------------------------------------------------------------- */
+
+/* A slim status line rather than a full-height toolbar: compact, regular-weight buttons. */
+.status-bar > revealer > box {
+  padding: 2px 6px;
+}
+
+.status-bar button {
+  min-height: 26px;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-weight: normal;
+}
+
+/* --- Colours popover ----------------------------------------------------------------- */
+
+.appearance-popover > contents {
+  min-width: 320px;
+}
+
+/* Downloads: about the size of Chrome's download bubble, so a list of downloads has room. */
+.downloads-popover > contents {
+    min-width: 400px;
+    min-height: 360px;
+    padding: 0;
+}

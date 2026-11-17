@@ -1,0 +1,20 @@
+{
+  "name": "Dark Cherry Chocolate",
+  "author": "hotcereal",
+  "dark": true,
+  "colors": {
+    "window_bg": "#2e2326",
+    "window_fg": "#efe6ea",
+    "border": "#3a2b30",
+    "accent": "#b57a8c",
+    "list_header_bg": "#46323a",
+    "row_bg": "#3a2b30",
+    "row_alt_bg": "#4a353d",
+    "row_fg": "#efe6ea",
+    "popover_bg": "#46323a",
+    "popover_selected_bg": "#c08fa0",
+    "success": "#cfa3b4",
+    "warning": "#d6b3a2",
+    "error": "#c96c7d"
+  }
+}
