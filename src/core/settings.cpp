@@ -11,6 +11,7 @@ fs::path profiles_dir() { return data_dir() / "profiles"; }
 fs::path selected_mods_dir() { return data_dir() / "selected-mods"; }
 fs::path collections_dir() { return data_dir() / "collections"; }
 fs::path collection_cache_dir() { return collections_dir() / "cache"; }
+fs::path library_file() { return data_dir() / "library.json"; }
 fs::path stardrop_data_dir() { return fs::path(g_get_user_config_dir()) / "Stardrop" / "Data"; }
 } // namespace paths
 

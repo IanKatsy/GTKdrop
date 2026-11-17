@@ -21,10 +21,20 @@ struct InstallTarget {
     std::map<std::string, fs::path> installed; // Update: lower-cased UniqueID -> folder of the loose copy
 };
 
+// What one archive (or added folder) put in place, for the library.
+struct PlacedArchive {
+    fs::path archive;
+    std::vector<fs::path> mods;   // mod folders (holding manifest.json) it installed or replaced
+    std::vector<fs::path> merged; // mod folders it added files to (a patch over a collection's main file)
+    std::vector<fs::path> settings_for; // folders a settings-only archive was laid over
+    bool empty() const { return mods.empty() && merged.empty() && settings_for.empty(); }
+};
+
 struct InstallResult {
     int archives = 0;  // unpacked and installed
     int mods = 0;      // mod folders placed
     std::vector<std::string> errors;
+    std::vector<PlacedArchive> placed;
 };
 
 // Installs every archive in `download_dir`, one at a time. Installed archives are listed in

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.4)
-project(GTKdrop VERSION 0.1.0 LANGUAGES C CXX) # C for the generated GResource bundle
+project(GTKdrop VERSION 0.2.0 LANGUAGES C CXX) # C for the generated GResource bundle
 
 set(CMAKE_CXX_STANDARD 26)
 
@@ -26,6 +26,7 @@ add_executable(GTKdrop
         src/nexus_browser.cpp
         src/core/process.cpp
         src/core/installer.cpp
+        src/core/library.cpp
         src/core/nxm_handler.cpp
         src/log.cpp
         src/toast.cpp

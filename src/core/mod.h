@@ -66,6 +66,11 @@ struct Mod {
     bool enabled = false;
     std::string note;
 
+    // From the library (what GTKdrop installed it from), when it has a record of this folder.
+    int library_nexus_id = 0;  // the Nexus mod it was installed as; see nexus_id()
+    int library_file_id = 0;   // the Nexus file
+    std::string installed_from; // archive name
+
     // Set by an update check.
     std::string latest_version;
     bool has_update() const;
@@ -75,7 +80,10 @@ struct Mod {
     bool is_from_collection() const { return !source_id.empty(); }
     bool has_config() const { return !config_file.empty(); }
     ModReference reference() const { return {manifest.unique_id, source_id}; }
-    int nexus_id() const; // from an UpdateKeys entry like "Nexus:1915", or 0
+    // The Nexus mod: the one GTKdrop installed it as (manifests often name a wrong one, or none), else the
+    // manifest's UpdateKeys ("Nexus:1915"), else 0.
+    int nexus_id() const { return library_nexus_id > 0 ? library_nexus_id : manifest_nexus_id(); }
+    int manifest_nexus_id() const;
     std::string missing_requirements_text() const;
     std::string requirements_text() const;
 };

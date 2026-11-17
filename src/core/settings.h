@@ -16,6 +16,7 @@ fs::path selected_mods_dir();  // ~/.config/gtkdrop/selected-mods — what SMAPI
 fs::path collections_dir();    // ~/.config/gtkdrop/collections — default collection install root
 fs::path collection_cache_dir(); // ~/.config/gtkdrop/collections/cache — one record per collection
 fs::path stardrop_data_dir();  // ~/.config/Stardrop/Data (import source)
+fs::path library_file();       // ~/.config/gtkdrop/library.json — what GTKdrop installed, from where
 } // namespace paths
 
 struct Settings {

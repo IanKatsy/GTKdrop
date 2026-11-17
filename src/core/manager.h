@@ -2,6 +2,7 @@
 
 #include "mod.h"
 #include "launcher.h"
+#include "library.h"
 #include "nexus.h"
 #include "profile.h"
 #include "selected_mods.h"
@@ -34,6 +35,9 @@ public:
     void update_settings(const Settings &settings);
 
     std::vector<Mod> &mods() { return mods_; }
+
+    // What GTKdrop installed and where from. Record installs with library().add(), then rescan().
+    Library &library() { return library_; }
 
     // Latest Nexus versions from an update check (Nexus mod ID -> version); kept across rescans.
     void set_latest_versions(std::map<int, std::string> versions);
@@ -74,12 +78,14 @@ private:
     Profile &active_mut();
     void apply_profile_to_mods();
     void apply_latest_versions();
+    void apply_library();
     bool resolve_pending_collection_mods(Profile &profile);
     void changed(bool defer = false);
 
     Settings settings_;
     ProfileStore store_{paths::profiles_dir()};
     std::vector<Mod> mods_;
+    Library library_{paths::library_file()};
     std::string active_name_ = kDefaultProfileName;
     bool dirty_ = false;        // unsaved edits waiting for "Save Profile" (auto-save off)
     bool pending_save_ = false; // auto-saved edits not written yet (see flush)

@@ -31,6 +31,7 @@ ModManager::LoadReport ModManager::load() {
     save_settings(settings_);
 
     store_.load();
+    library_.load();
     active_name_ = store_.find(settings_.last_profile) ? settings_.last_profile : kDefaultProfileName;
     rescan();
     return report;
@@ -43,6 +44,7 @@ void ModManager::rescan() {
             .collection_cache_dir = paths::collection_cache_dir(),
             .ignore_hidden_folders = settings_.ignore_hidden_folders,
     });
+    apply_library();
     // Mods a collection profile was waiting for may have just been installed.
     for (const auto &p: store_.profiles())
         if (p.is_from_collection() || !p.pending_nexus_ids.empty())
@@ -50,6 +52,23 @@ void ModManager::rescan() {
                 store_.save(*profile);
     apply_profile_to_mods();
     apply_latest_versions();
+}
+
+void ModManager::apply_library() {
+    if (library_.prune())
+        library_.save();
+    for (auto &mod: mods_) {
+        const LibraryMod *rec = nullptr;
+        const LibraryEntry *e = library_.find_folder(mod.folder, &rec);
+        if (!e)
+            continue;
+        mod.library_file_id = e->nexus_file_id;
+        mod.installed_from = e->archive;
+        // An archive holding several mods (a mod with its frameworks bundled, say) names one Nexus mod for all of
+        // them: only trust it over the manifest for a single-mod archive, or a manifest that names none.
+        if (e->nexus_mod_id > 0 && (e->mods.size() == 1 || mod.manifest_nexus_id() == 0))
+            mod.library_nexus_id = e->nexus_mod_id;
+    }
 }
 
 void ModManager::set_latest_versions(std::map<int, std::string> versions) {

@@ -34,14 +34,23 @@ fs::path downloads_dir_for(const fs::path &payload);
 // Moves the download folders older versions kept in ~/Downloads/GTKdrop here, deleting installed archives.
 void move_old_downloads();
 
-// Which Nexus file each archive in a download folder is (.nexus-files), and which archives got installed
-// (.installed). Mods' own manifests often name the wrong Nexus ID (or none), so the collection check uses these.
-void record_file(const fs::path &dir, int file_id, const std::string &archive);
-std::map<int, std::string> recorded_files(const fs::path &dir);
+// Which Nexus file each archive in a download folder is (.nexus-files: "file_id<TAB>archive<TAB>mod_id"), so the
+// install can record it in the library. .installed lists the archives installed from the folder; since the
+// library exists, only lists from before it rely on that.
+struct RecordedFile {
+    int file_id = 0;
+    int mod_id = 0; // 0 in records from before it was kept
+    std::string archive;
+};
+void record_file(const fs::path &dir, int file_id, const std::string &archive, int mod_id);
+std::map<int, std::string> recorded_files(const fs::path &dir); // file_id -> archive
+std::map<std::string, RecordedFile> recorded_archives(const fs::path &dir); // archive -> its file
 std::vector<std::string> installed_archives(const fs::path &dir);
 
 // A download list's mod pages, in order.
 std::vector<std::string> payload_urls(const fs::path &payload);
+// The Nexus mod a download list names for a file, or 0.
+int payload_mod_for_file(const fs::path &payload, int file_id);
 // The download list (in payloads_dir()) a file from the browser belongs to: one with this exact file, else one with
 // this mod (the user picked a file on its Files tab). `list_file_id` gets the file the list names for it when that
 // is unambiguous (the list has one file of the mod), else 0. Empty if no list has the mod.
@@ -58,6 +67,8 @@ public:
     // nullptr when the list has no mods it can download.
     static std::shared_ptr<Job> start(const fs::path &payload, const nexus::Account &account, GtkWindow *parent);
     static inline std::function<void(const Job &)> on_finished;
+    // Whether a Nexus file is installed where this list's mods go (the library); such files are skipped.
+    static inline std::function<bool(const fs::path &payload, int file_id)> is_installed;
 
     const fs::path &payload() const { return payload_; }
     const fs::path &out_dir() const { return out_dir_; }

@@ -120,7 +120,7 @@ std::string Mod::missing_requirements_text() const {
     return text;
 }
 
-int Mod::nexus_id() const {
+int Mod::manifest_nexus_id() const {
     for (const auto &key: manifest.update_keys) {
         const auto colon = key.find(':');
         if (colon == std::string::npos)

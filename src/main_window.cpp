@@ -204,6 +204,7 @@ private:
     void on_mod_ignore_update();
     void on_mod_delete() { if (context_item_) confirm_delete(context_item_); }
     void on_mod_open_folder() { if (context_item_) open_mod_path(context_item_, 0); }
+    void on_mod_open_page();
     void on_mod_open_manifest() { if (context_item_) open_mod_path(context_item_, 1); }
     void on_mod_open_config() { if (context_item_) open_mod_path(context_item_, 2); }
     void on_refresh_mods();
@@ -234,6 +235,11 @@ private:
                             std::vector<std::pair<std::string, std::string>> list);
     void toast_with_file(const std::string &text, const fs::path &path);
     void install_downloads(const fs::path &payload, const fs::path &download_dir, const std::string &download_status);
+    // Into the library: what each archive put where, and which Nexus file it was (from the download folder's
+    // records, when it's a download).
+    void record_installs(const gtkdrop::InstallResult &r, const std::string &source_id, const fs::path &payload = {},
+                         const fs::path &download_dir = {});
+    std::string payload_source_id(const fs::path &payload); // the collection a list is for, or ""
     std::set<fs::path> installing_, install_again_; // one install per download folder; later requests wait
 
     // Game launching
@@ -361,6 +367,9 @@ MainWindow::MainWindow(GtkApplication *app) {
     nexus_.load(); // keyring, then a check with Nexus; the footer follows along
 
     gtkdrop::downloads::move_old_downloads();
+    gtkdrop::downloads::Job::is_installed = [this](const fs::path &payload, int file_id) {
+        return manager_.library().find_file(file_id, payload_source_id(payload)) != nullptr;
+    };
     // Downloads keep going after the Download Lists window closes; say when they end.
     gtkdrop::downloads::Job::on_finished = [this](const gtkdrop::downloads::Job &job) {
         if (job.state() == gtkdrop::downloads::Job::State::Done)
@@ -519,7 +528,7 @@ void MainWindow::setup_actions() {
         {"open-themes-folder", action_thunk<&MainWindow::on_open_themes_folder>},
         // Row context menu
         {"mod-open-folder", action_thunk<&MainWindow::on_mod_open_folder>},
-        {"mod-open-page", not_implemented},
+        {"mod-open-page", action_thunk<&MainWindow::on_mod_open_page>},
         {"mod-open-manifest", action_thunk<&MainWindow::on_mod_open_manifest>},
         {"mod-open-config", action_thunk<&MainWindow::on_mod_open_config>},
         {"mod-filter-author", action_thunk<&MainWindow::on_mod_filter_author>},
@@ -593,6 +602,7 @@ void MainWindow::install_local(std::vector<fs::path> sources) {
                               : "Installing " + std::to_string(sources.size()) + " items…");
     gtkdrop::install_files(std::move(sources), gtkdrop::downloads::downloads_dir() / ".add-mods",
                            loose_mods_target(), [this](gtkdrop::InstallResult r) {
+        record_installs(r, {});
         manager_.flush();
         manager_.rescan();
         populate_mods();
@@ -640,6 +650,20 @@ void MainWindow::request_switch(const std::string &name) {
             return;
         }
     }
+}
+
+// Its Nexus page, from the library's record when GTKdrop installed it (manifests often name the wrong mod).
+void MainWindow::on_mod_open_page() {
+    const gtkdrop::Mod *m = context_item_ ? mod_for(context_item_) : nullptr;
+    if (!m)
+        return;
+    if (m->nexus_id() <= 0) {
+        toast("“" + m->name() + "” doesn't say which Nexus Mods page it's from");
+        return;
+    }
+    GtkUriLauncher *launcher = gtk_uri_launcher_new(gtkdrop::nexus::mod_page_url(m->nexus_id()).c_str());
+    gtk_uri_launcher_launch(launcher, window_, nullptr, nullptr, nullptr);
+    g_object_unref(launcher);
 }
 
 void MainWindow::on_mod_toggle_state() {
@@ -1572,6 +1596,7 @@ void MainWindow::install_downloads(const fs::path &payload, const fs::path &down
                               [this, payload, nxm, download_dir, job, is_collection = link.has_value()](
                                       gtkdrop::InstallResult r) {
         installing_.erase(download_dir);
+        record_installs(r, payload_source_id(payload), payload, download_dir);
         if (install_again_.erase(download_dir)) {
             install_downloads(payload, download_dir, "More downloads arrived");
             return; // that run reports and re-checks
@@ -1591,6 +1616,41 @@ void MainWindow::install_downloads(const fs::path &payload, const fs::path &down
         if (is_collection)
             open_uri(nxm); // what's still missing (failed downloads, other files of a mod…)
     }, log);
+}
+
+std::string MainWindow::payload_source_id(const fs::path &payload) {
+    if (auto doc = gtkdrop::read_json_file(payload); doc && doc->is_object())
+        if (const auto link = gtkdrop::nexus::parse_nxm(gtkdrop::get_string_ci(*doc, "nxm"));
+            link && link->kind == gtkdrop::nexus::NxmLink::Kind::Collection)
+            return std::string(gtkdrop::nexus::kGameDomain) + "-" + link->slug;
+    return {};
+}
+
+void MainWindow::record_installs(const gtkdrop::InstallResult &r, const std::string &source_id,
+                                 const fs::path &payload, const fs::path &download_dir) {
+    const auto files = download_dir.empty() ? std::map<std::string, gtkdrop::downloads::RecordedFile>{}
+                                            : gtkdrop::downloads::recorded_archives(download_dir);
+    for (const auto &p: r.placed) {
+        gtkdrop::LibraryEntry e;
+        e.archive = p.archive.filename().string();
+        e.origin = download_dir.empty() ? "local" : "nexus";
+        e.source_id = source_id;
+        e.payload = payload.filename().string();
+        if (auto it = files.find(e.archive); it != files.end()) {
+            e.nexus_file_id = it->second.file_id;
+            e.nexus_mod_id = it->second.mod_id > 0 ? it->second.mod_id
+                                                   : gtkdrop::downloads::payload_mod_for_file(payload, e.nexus_file_id);
+        }
+        for (const auto &f: p.mods)
+            e.mods.push_back({f});
+        for (const auto &f: p.merged)
+            e.mods.push_back({f, {}, {}, true});
+        e.settings_for = p.settings_for;
+        g_message("Library: %s (Nexus mod %d, file %d) -> %zu folder(s)%s", e.archive.c_str(), e.nexus_mod_id,
+                  e.nexus_file_id, e.mods.size() + e.settings_for.size(),
+                  source_id.empty() ? "" : (" for " + source_id).c_str());
+        manager_.library().add(std::move(e));
+    }
 }
 
 void MainWindow::open_uri(const std::string &uri) {
@@ -1652,10 +1712,10 @@ void MainWindow::handle_file_link(const gtkdrop::nexus::NxmLink &link) {
                     toast("Download failed: " + error);
                     return;
                 }
-                gtkdrop::downloads::record_file(dir, link.file_id, path.filename().string());
+                gtkdrop::downloads::record_file(dir, link.file_id, path.filename().string(), link.mod_id);
                 // Another file of the mod than the list named (e.g. a newer one): it stands in for the listed one.
                 if (list_file > 0 && list_file != link.file_id)
-                    gtkdrop::downloads::record_file(dir, list_file, path.filename().string());
+                    gtkdrop::downloads::record_file(dir, list_file, path.filename().string(), link.mod_id);
                 g_message("Browser download: saved %s", path.filename().c_str());
                 // A running download of the same list installs it with the rest when it ends.
                 if (auto job = gtkdrop::downloads::Job::current(); job && job->active() && job->out_dir() == dir) {
@@ -1684,6 +1744,7 @@ void MainWindow::handle_collection_link(const gtkdrop::nexus::NxmLink &link, con
         // downloaded as got installed from this list's download folder.
         const std::string file = "collection-" + collection->slug + "-r" + std::to_string(collection->revision) + ".json";
         const auto dl_dir = gtkdrop::downloads::downloads_dir_for(gtkdrop::payloads_dir() / file);
+        const std::string source_id = std::string(gtkdrop::nexus::kGameDomain) + "-" + collection->slug;
         auto check = std::make_shared<CollectionCheck>();
         check->installed = gtkdrop::downloads::installed_archives(dl_dir);
         auto recorded = gtkdrop::downloads::recorded_files(dl_dir);
@@ -1691,12 +1752,16 @@ void MainWindow::handle_collection_link(const gtkdrop::nexus::NxmLink &link, con
             if (f.optional || f.mod_id == gtkdrop::nexus::kSmapiModId)
                 continue;
             ++check->required;
+            // The collection's own copy or a loose one (what its profile can enable; another collection's pinned
+            // copy doesn't count), in at least the collection's version. Or the library says this very file is
+            // installed there.
             const bool installed = std::ranges::any_of(manager_.mods(), [&](const gtkdrop::Mod &m) {
-                return m.nexus_id() == f.mod_id &&
+                return m.nexus_id() == f.mod_id && (!m.is_from_collection() || gtkdrop::iequals(m.source_id, source_id)) &&
                        (f.version.empty() || gtkdrop::compare_versions(m.manifest.version, f.version) >= 0);
             });
-            if (installed)
+            if (installed || manager_.library().find_file(f.file_id, source_id))
                 continue;
+            // Lists installed before the library: their archive records.
             if (auto it = recorded.find(f.file_id); it != recorded.end() && check->has(it->second))
                 continue;
             check->missing.push_back(f);
@@ -1721,10 +1786,11 @@ void MainWindow::handle_collection_link(const gtkdrop::nexus::NxmLink &link, con
         check->pending = int(unknown.size());
         for (const auto &f: unknown)
             gtkdrop::nexus::fetch_file_name(nexus_, gtkdrop::nexus::kGameDomain, f.mod_id, f.file_id,
-                                            [check, dl_dir, id = f.file_id, finish](std::optional<std::string> name,
+                                            [check, dl_dir, id = f.file_id, mod_id = f.mod_id, finish](
+                                                    std::optional<std::string> name,
                                                                                     const std::string &) {
                 if (name) {
-                    gtkdrop::downloads::record_file(dl_dir, id, *name);
+                    gtkdrop::downloads::record_file(dl_dir, id, *name, mod_id);
                     if (check->has(*name))
                         check->found.insert(id);
                 }

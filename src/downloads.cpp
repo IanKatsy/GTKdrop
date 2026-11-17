@@ -89,23 +89,51 @@ std::vector<std::string> lines_of(const fs::path &file) {
 }
 } // namespace
 
-void record_file(const fs::path &dir, int file_id, const std::string &archive) {
-    auto files = recorded_files(dir);
-    if (files[file_id] == archive)
+namespace {
+std::vector<RecordedFile> read_records(const fs::path &dir) {
+    std::vector<RecordedFile> out;
+    for (const auto &line: lines_of(dir / ".nexus-files")) {
+        const auto tab = line.find('\t');
+        if (tab == std::string::npos)
+            continue;
+        RecordedFile f{std::atoi(line.c_str())};
+        const auto tab2 = line.find('\t', tab + 1);
+        f.archive = line.substr(tab + 1, tab2 == std::string::npos ? std::string::npos : tab2 - tab - 1);
+        if (tab2 != std::string::npos)
+            f.mod_id = std::atoi(line.c_str() + tab2 + 1);
+        if (f.file_id > 0)
+            out.push_back(std::move(f));
+    }
+    return out;
+}
+} // namespace
+
+void record_file(const fs::path &dir, int file_id, const std::string &archive, int mod_id) {
+    std::map<int, RecordedFile> by_id;
+    for (auto &f: read_records(dir))
+        by_id[f.file_id] = f;
+    RecordedFile &f = by_id[file_id];
+    if (f.archive == archive && (f.mod_id == mod_id || mod_id == 0))
         return;
-    files[file_id] = archive;
+    f = {file_id, mod_id > 0 ? mod_id : (f.archive == archive ? f.mod_id : 0), archive};
     std::string text;
-    for (const auto &[id, name]: files)
-        text += std::to_string(id) + "\t" + name + "\n";
+    for (const auto &[id, r]: by_id)
+        text += std::to_string(id) + "\t" + r.archive + "\t" + std::to_string(r.mod_id) + "\n";
     g_file_set_contents((dir / ".nexus-files").c_str(), text.c_str(), gssize(text.size()), nullptr);
 }
 
+
 std::map<int, std::string> recorded_files(const fs::path &dir) {
     std::map<int, std::string> files;
-    for (const auto &line: lines_of(dir / ".nexus-files"))
-        if (const auto tab = line.find('\t'); tab != std::string::npos)
-            if (const int id = std::atoi(line.c_str()); id > 0)
-                files[id] = line.substr(tab + 1);
+    for (auto &f: read_records(dir))
+        files[f.file_id] = f.archive;
+    return files;
+}
+
+std::map<std::string, RecordedFile> recorded_archives(const fs::path &dir) {
+    std::map<std::string, RecordedFile> files;
+    for (auto &f: read_records(dir))
+        files[f.archive] = f;
     return files;
 }
 
@@ -121,6 +149,16 @@ std::vector<std::string> payload_urls(const fs::path &payload) {
                         if (it.value().is_string())
                             urls.push_back(it.value().get<std::string>());
     return urls;
+}
+
+int payload_mod_for_file(const fs::path &payload, int file_id) {
+    for (const auto &url: payload_urls(payload)) {
+        std::string domain;
+        int m = 0, f = 0;
+        if (file_id > 0 && parse_mod_url(url, domain, m, f) && f == file_id)
+            return m;
+    }
+    return 0;
 }
 
 fs::path payload_with_file(int mod_id, int file_id, int *list_file_id) {
@@ -349,15 +387,16 @@ void Job::check_existing(size_t i) {
         if (name) {
             job->items_[i].file_name = *name;
             std::error_code ec;
-            if (std::ranges::contains(installed_archives(job->out_dir_), *name)) {
-                record_file(job->out_dir_, job->items_[i].file_id, *name);
+            if ((is_installed && is_installed(job->payload_, job->items_[i].file_id)) ||
+                std::ranges::contains(installed_archives(job->out_dir_), *name)) {
+                record_file(job->out_dir_, job->items_[i].file_id, *name, job->items_[i].mod_id);
                 ++job->succeeded_;
                 job->append_log("  already installed: " + *name);
                 job->advance(false);
                 return;
             }
             if (fs::exists(job->out_dir_ / *name, ec)) {
-                record_file(job->out_dir_, job->items_[i].file_id, *name);
+                record_file(job->out_dir_, job->items_[i].file_id, *name, job->items_[i].mod_id);
                 ++job->succeeded_;
                 job->append_log("  already downloaded: " + *name);
                 g_message("Downloads %s: already downloaded", job->tag(i).c_str());
@@ -456,7 +495,7 @@ void Job::download(size_t i, const std::string &url) {
         std::error_code ec;
         const auto size = fs::file_size(path, ec);
         job->append_log("  saved " + path.filename().string());
-        record_file(job->out_dir_, job->items_[i].file_id, path.filename().string());
+        record_file(job->out_dir_, job->items_[i].file_id, path.filename().string(), job->items_[i].mod_id);
         g_message("Downloads %s: saved %s (%s)", job->tag(i).c_str(), path.filename().c_str(),
                   ec ? "?" : mb(goffset(size)).c_str());
         job->advance();

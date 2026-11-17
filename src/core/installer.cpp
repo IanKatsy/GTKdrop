@@ -122,6 +122,7 @@ struct Run {
     size_t next = 0;
     std::vector<fs::path> overlays; // config-only archives, laid over the installed mods last
     InstallResult result;
+    PlacedArchive current; // what the archive being placed put where
 
     void note(const std::string &line) const {
         if (log)
@@ -136,6 +137,7 @@ struct Run {
 bool place(Run &run, const fs::path &archive) {
     std::error_code ec;
     fs::path root = run.unpack_dir();
+    run.current = {archive};
     make_writable(root);
     // Some archives have manifest.json at the top instead of in a folder: give them one.
     if (fs::exists(root / "manifest.json", ec)) {
@@ -147,14 +149,24 @@ bool place(Run &run, const fs::path &archive) {
     }
 
     const int before = run.result.mods;
+    // The mod folders under `from`, as they'll be under `to`.
+    auto mods_moving = [](const fs::path &from, const fs::path &to) {
+        std::vector<fs::path> found, out;
+        find_mod_dirs(from, found);
+        for (const auto &f: found)
+            out.push_back(f == from ? to : to / f.lexically_relative(from));
+        return out;
+    };
     auto install_at = [&](const fs::path &from, const fs::path &to) {
         std::string error;
         if (fs::exists(to, ec) && !retire(to, run.backup_dir(), error)) {
             run.result.errors.push_back("Couldn't replace " + error);
             return;
         }
+        const auto mods = mods_moving(from, to);
         if (move_dir(from, to, error)) {
             ++run.result.mods;
+            run.current.mods.insert(run.current.mods.end(), mods.begin(), mods.end());
             run.note("  installed " + to.string());
         } else {
             run.result.errors.push_back("Couldn't install " + error);
@@ -175,12 +187,14 @@ bool place(Run &run, const fs::path &archive) {
                 continue;
             }
             std::error_code copy_ec;
+            const auto mods = mods_moving(e.path(), to);
             fs::copy(e.path(), to, fs::copy_options::recursive | fs::copy_options::overwrite_existing, copy_ec);
             if (copy_ec) {
                 run.result.errors.push_back("Couldn't add to " + to.filename().string() + ": " + copy_ec.message());
                 run.note("  couldn't add to " + to.string() + ": " + copy_ec.message());
             } else {
                 ++run.result.mods;
+                run.current.merged.insert(run.current.merged.end(), mods.begin(), mods.end());
                 run.note("  added to " + to.string());
             }
         }
@@ -226,8 +240,10 @@ bool place(Run &run, const fs::path &archive) {
                     if (copy_ec)
                         run.result.errors.push_back("Couldn't apply settings to " + to.filename().string() + ": " +
                                                     copy_ec.message());
-                    else
+                    else {
+                        run.current.settings_for.push_back(to);
                         run.note("  settings applied to " + to.string());
+                    }
                 }
                 return true;
             }
@@ -266,8 +282,11 @@ void next_archive(std::shared_ptr<Run> run) {
                  fs::copy_options::recursive | fs::copy_options::copy_symlinks, ec);
         if (ec)
             run->result.errors.push_back(archive.filename().string() + ": " + ec.message());
-        else if (place(*run, archive))
+        else if (place(*run, archive)) {
             ++run->result.archives;
+            if (!run->current.empty())
+                run->result.placed.push_back(std::move(run->current));
+        }
         next_archive(run);
         return;
     }
@@ -290,6 +309,8 @@ void next_archive(std::shared_ptr<Run> run) {
             run->result.errors.push_back(archive.filename().string() + ": " + last_line(output));
         } else if (place(*run, archive)) {
             ++run->result.archives;
+            if (!run->current.empty())
+                run->result.placed.push_back(std::move(run->current));
             if (run->downloads) {
                 // Recorded, then deleted: the record is what download lists and the collection check go by.
                 const std::string list = read_text_file(run->work_dir / ".installed").value_or("");
