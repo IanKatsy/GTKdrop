@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 4.4)
-project(GTKdrop VERSION 0.2.0 LANGUAGES C CXX) # C for the generated GResource bundle
+project(GTKdrop VERSION 0.3.0 LANGUAGES C CXX) # C for the generated GResource bundle
 
 set(CMAKE_CXX_STANDARD 26)
+
+# Warnings are errors in GTKdrop's own C++ (not the generated GResource C file or fetched dependencies).
+set(GTKDROP_WARNINGS -Wall -Werror)
 
 add_executable(GTKdrop
         src/main.cpp
@@ -168,6 +171,7 @@ add_custom_command(
         VERBATIM
 )
 add_dependencies(GTKdrop gtkdrop_version)
+target_compile_options(GTKdrop PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${GTKDROP_WARNINGS}>)
 target_sources(GTKdrop PRIVATE ${GTKDROP_GEN_DIR}/local_build.cpp)
 target_include_directories(GTKdrop PRIVATE ${GTKDROP_GEN_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
