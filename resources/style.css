@@ -22,6 +22,12 @@ headerbar windowtitle:backdrop {
   background-color: var(--headerbar-backdrop-color);
 }
 
+/* --- Steam launch options dialog -------------------------------------------------- */
+
+.steam-command {
+  padding: 8px 10px;
+}
+
 /* --- Mod list ------------------------------------------------------------------ */
 
 /* Only the card's outer corners are rounded; the header buttons and rows inside are square. */

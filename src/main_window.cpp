@@ -1536,21 +1536,36 @@ void MainWindow::show_steam_setup(bool then_launch) {
             "instead of this profile.\n\nIn Steam, right-click Stardew Valley → Properties → General, and paste this "
             "into Launch Options. It's needed once. Only launches from GTKdrop use a profile; starting the game from "
             "Steam itself still uses the default Mods folder.");
+    // Wide layout: a little more room and the buttons side by side. (The alert's width follows its message text,
+    // not the extra child, so the command below wraps rather than widening it.)
+    adw_alert_dialog_set_prefer_wide_layout(ADW_ALERT_DIALOG(dialog), TRUE);
     GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-    GtkWidget *entry = gtk_entry_new();
-    gtk_editable_set_text(GTK_EDITABLE(entry), options.c_str());
-    gtk_editable_set_editable(GTK_EDITABLE(entry), FALSE);
-    gtk_widget_set_hexpand(entry, TRUE);
-    gtk_widget_add_css_class(entry, "monospace");
+    // The whole command, wrapped if it must, and selectable: a single-line entry would hide most of it.
+    GtkWidget *command = gtk_label_new(options.c_str());
+    gtk_label_set_selectable(GTK_LABEL(command), TRUE);
+    gtk_label_set_wrap(GTK_LABEL(command), TRUE);
+    gtk_label_set_wrap_mode(GTK_LABEL(command), PANGO_WRAP_WORD_CHAR);
+    gtk_label_set_xalign(GTK_LABEL(command), 0);
+    gtk_widget_set_hexpand(command, TRUE);
+    gtk_widget_add_css_class(command, "monospace");
+    gtk_widget_add_css_class(command, "steam-command");
+    // A selectable label that gets the focus selects all its text; start with nothing selected.
+    g_signal_connect(command, "map", G_CALLBACK(+[](GtkWidget *label, gpointer) {
+        g_idle_add_once([](gpointer l) { gtk_label_select_region(GTK_LABEL(l), 0, 0); }, label);
+    }), nullptr);
+    GtkWidget *frame = gtk_frame_new(nullptr);
+    gtk_frame_set_child(GTK_FRAME(frame), command);
+    gtk_widget_set_hexpand(frame, TRUE);
     GtkWidget *copy = gtk_button_new_from_icon_name("edit-copy-symbolic");
     gtk_widget_set_tooltip_text(copy, "Copy");
+    gtk_widget_set_valign(copy, GTK_ALIGN_CENTER);
     g_object_set_data_full(G_OBJECT(copy), "text", g_strdup(options.c_str()), g_free);
     g_signal_connect(copy, "clicked", G_CALLBACK(+[](GtkButton *b, gpointer) {
         gdk_clipboard_set_text(gtk_widget_get_clipboard(GTK_WIDGET(b)),
                                static_cast<const char *>(g_object_get_data(G_OBJECT(b), "text")));
         gtk_button_set_icon_name(b, "object-select-symbolic");
     }), nullptr);
-    gtk_box_append(GTK_BOX(row), entry);
+    gtk_box_append(GTK_BOX(row), frame);
     gtk_box_append(GTK_BOX(row), copy);
     adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), row);
     if (then_launch) {
