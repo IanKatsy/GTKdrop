@@ -509,6 +509,23 @@ void show_settings_dialog(GtkWidget *parent, ModManager &manager, nexus::Account
             sd->save();
         }), sd);
         adw_preferences_group_add(ADW_PREFERENCES_GROUP(launch), row);
+
+        // The launch options Steam needs, shown again (the setup dialog appears by itself only before the first
+        // Steam launch). Not for direct launches.
+        GtkWidget *steam = plain_action_row("Steam Launch Options",
+                                            "What to paste into Stardew Valley’s Launch Options in Steam, so "
+                                            "launches from GTKdrop use the profile");
+        GtkWidget *show = gtk_button_new_with_label("Show");
+        gtk_widget_set_valign(show, GTK_ALIGN_CENTER);
+        gtk_actionable_set_action_name(GTK_ACTIONABLE(show), "win.steam-setup");
+        adw_action_row_add_suffix(ADW_ACTION_ROW(steam), show);
+        adw_action_row_set_activatable_widget(ADW_ACTION_ROW(steam), show);
+        adw_preferences_group_add(ADW_PREFERENCES_GROUP(launch), steam);
+        g_object_bind_property_full(row, "selected", steam, "visible", G_BINDING_SYNC_CREATE,
+                                    +[](GBinding *, const GValue *from, GValue *to, gpointer) -> gboolean {
+            g_value_set_boolean(to, g_value_get_uint(from) != 2); // 2: Directly (GOG)
+            return TRUE;
+        }, nullptr, nullptr, nullptr);
     }
 
     GtkWidget *profiles = adw_preferences_group_new();

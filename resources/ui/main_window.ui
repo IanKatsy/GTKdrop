@@ -32,6 +32,10 @@
         <attribute name="label">Start SMAPI</attribute>
         <attribute name="action">win.start-smapi</attribute>
       </item>
+      <item>
+        <attribute name="label">Steam Launch Options…</attribute>
+        <attribute name="action">win.steam-setup</attribute>
+      </item>
     </section>
     <section>
       <attribute name="label">View</attribute>
