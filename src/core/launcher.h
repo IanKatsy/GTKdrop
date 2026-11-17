@@ -42,6 +42,10 @@ bool configured();                          // Steam's settings have it, or a la
 void remember_verified(bool ok);            // a launch did (not) come through it
 } // namespace steam_wrapper
 
+// The installed SMAPI's version ("4.1.10"), read from StardewModdingAPI.dll's version resource (ProductVersion,
+// without a "+<commit>" suffix; else FileVersion) as Stardrop does. Empty when there's no DLL or no version in it.
+std::string smapi_version(const fs::path &game_dir);
+
 // Starts the game and tracks the SMAPI process until it exits. Lives on the GLib main loop.
 class GameLauncher {
 public:

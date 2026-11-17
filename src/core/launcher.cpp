@@ -9,6 +9,7 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <string_view>
 #include <vector>
 
 namespace gtkdrop {
@@ -33,6 +34,61 @@ fs::path gog::find_stardew_dir() {
     const fs::path dir = fs::path(g_get_home_dir()) / "GOG Games" / "Stardew Valley" / "game";
     std::error_code ec;
     return fs::exists(dir / "Stardew Valley.dll", ec) ? dir : fs::path();
+}
+
+namespace {
+
+// One string of a PE version resource (VS_VERSIONINFO > StringFileInfo > StringTable > String): a header of three
+// little-endian WORDs (wLength, wValueLength in characters, wType = 1 for text), the key in UTF-16 with its NUL,
+// padding to 32 bits, then the value. Found by its key rather than by walking the PE sections: the key is unique
+// enough, and .NET assemblies keep the resource in a plain .rsrc section.
+std::string version_string(const std::string &data, std::u16string_view key) {
+    std::string pattern;
+    for (char16_t c: key) {
+        pattern += char(c & 0xff);
+        pattern += char(c >> 8);
+    }
+    pattern.append(2, '\0');
+    auto word = [&data](size_t at) { return uint16_t(uint8_t(data[at]) | uint8_t(data[at + 1]) << 8); };
+    for (size_t at = data.find(pattern); at != std::string::npos; at = data.find(pattern, at + 1)) {
+        if (at < 6 || at % 2 || word(at - 2) != 1)
+            continue;
+        const size_t chars = word(at - 4);
+        size_t value = at + pattern.size();
+        value = (value + 3) & ~size_t(3);
+        if (chars == 0 || value + chars * 2 > data.size())
+            continue;
+        std::u16string text;
+        for (size_t i = 0; i < chars; ++i)
+            if (const char16_t c = word(value + i * 2); c)
+                text += c;
+            else
+                break;
+        char *utf8 = g_utf16_to_utf8(reinterpret_cast<const gunichar2 *>(text.data()), glong(text.size()), nullptr,
+                                     nullptr, nullptr);
+        std::string result = utf8 ? utf8 : "";
+        g_free(utf8);
+        if (!result.empty())
+            return result;
+    }
+    return {};
+}
+
+} // namespace
+
+std::string smapi_version(const fs::path &game_dir) {
+    gchar *contents = nullptr;
+    gsize size = 0;
+    if (game_dir.empty() || !g_file_get_contents((game_dir / "StardewModdingAPI.dll").c_str(), &contents, &size, nullptr))
+        return {};
+    const std::string data(contents, size);
+    g_free(contents);
+    std::string version = version_string(data, u"ProductVersion");
+    if (version.empty())
+        version = version_string(data, u"FileVersion");
+    if (const auto plus = version.find('+'); plus != std::string::npos)
+        version.resize(plus); // "4.1.10+8a6c…": the build's commit
+    return version;
 }
 
 namespace {

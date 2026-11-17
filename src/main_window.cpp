@@ -255,6 +255,7 @@ private:
     gtkdrop::LaunchMethod launched_with_ = gtkdrop::LaunchMethod::Ask;
     void ask_launch_method();
     void set_game_state(GameState state);
+    void update_smapi_subtitle();
     gtkdrop::GameLauncher::Callbacks game_callbacks();
 
     GtkWindow *window_ = nullptr;
@@ -368,6 +369,7 @@ MainWindow::MainWindow(GtkApplication *app) {
     }), this);
 
     const auto report = manager_.load();
+    update_smapi_subtitle();
     populate_profiles();
     populate_mods();
     report_load(report);
@@ -1444,6 +1446,8 @@ void MainWindow::on_refresh_mods() {
 void MainWindow::on_settings() {
     gtkdrop::ui::show_settings_dialog(GTK_WIDGET(window_), manager_, nexus_, [this] {
         populate_mods(); // folders may have changed (the manager rescans when they do)
+        if (!launcher_.busy())
+            update_smapi_subtitle(); // so may the game folder
     });
 }
 
@@ -1645,6 +1649,18 @@ gtkdrop::GameLauncher::Callbacks MainWindow::game_callbacks() {
     };
 }
 
+// The header's subtitle while the game isn't running: which SMAPI the game folder has. Read again whenever it may
+// have changed (start-up, Settings, the game exiting, which is when SMAPI updates itself... or the user does).
+void MainWindow::update_smapi_subtitle() {
+    const auto &settings = manager_.settings();
+    std::string text = "SMAPI not found";
+    if (settings.has_game_dir()) {
+        const std::string version = gtkdrop::smapi_version(settings.game_dir);
+        text = version.empty() ? "SMAPI (version unknown)" : "SMAPI " + version;
+    }
+    adw_window_title_set_subtitle(window_title_, text.c_str());
+}
+
 // While the game runs the window is locked, as in Stardrop: switching profiles would rewrite the config files
 // of mods the game has loaded, and mod changes wouldn't take effect until the next launch anyway.
 void MainWindow::set_game_state(GameState state) {
@@ -1656,9 +1672,11 @@ void MainWindow::set_game_state(GameState state) {
     gtk_label_set_label(smapi_label_, state == GameState::Starting ? "Starting…"
                                       : state == GameState::Running ? "Running"
                                                                     : "Start SMAPI");
-    adw_window_title_set_subtitle(window_title_, state == GameState::Running ? "Stardew Valley is running"
-                                                 : state == GameState::Starting ? "Starting Stardew Valley…"
-                                                                                : "Unknown SMAPI version");
+    if (idle)
+        update_smapi_subtitle();
+    else
+        adw_window_title_set_subtitle(window_title_, state == GameState::Running ? "Stardew Valley is running"
+                                                                                 : "Starting Stardew Valley…");
     for (const char *name: {"start-smapi", "add-mods", "add-mod-folders", "refresh-mods", "enable-all", "disable-all", "edit-profiles",
                             "save-configs", "save-profile", "settings", "mod-delete", "mod-toggle-state"})
         if (GAction *action = g_action_map_lookup_action(G_ACTION_MAP(window_), name))

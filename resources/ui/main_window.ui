@@ -141,7 +141,7 @@
             <property name="title-widget">
               <object class="AdwWindowTitle" id="window_title">
                 <property name="title">Stardrop</property>
-                <property name="subtitle">Unknown SMAPI version</property>
+                <property name="subtitle">SMAPI not found</property>
               </object>
             </property>
 
