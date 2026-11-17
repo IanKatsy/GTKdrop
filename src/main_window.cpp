@@ -1528,33 +1528,47 @@ void MainWindow::ask_launch_method() {
 }
 
 // Steam drops the arguments GTKdrop passes, so the mods folder goes through the game's Steam launch options.
+// A plain AdwDialog laid out like an alert: an AdwAlertDialog's width follows its message, which wrapped the
+// command over several lines. Here the command decides the width and stays on one line (scrolling sideways in a
+// window too narrow for it).
 void MainWindow::show_steam_setup(bool then_launch) {
     const std::string options = gtkdrop::steam_wrapper::launch_options();
-    AdwDialog *dialog = adw_alert_dialog_new(
-            "Set Up Steam Launch Options",
-            "Steam doesn’t pass GTKdrop’s mods folder on to the game, so it would start with the default Mods folder "
-            "instead of this profile.\n\nIn Steam, right-click Stardew Valley → Properties → General, and paste this "
-            "into Launch Options. It's needed once. Only launches from GTKdrop use a profile; starting the game from "
-            "Steam itself still uses the default Mods folder.");
-    // Wide layout: a little more room and the buttons side by side. (The alert's width follows its message text,
-    // not the extra child, so the command below wraps rather than widening it.)
-    adw_alert_dialog_set_prefer_wide_layout(ADW_ALERT_DIALOG(dialog), TRUE);
+    AdwDialog *dialog = adw_dialog_new();
+    adw_dialog_set_title(dialog, "Steam Launch Options");
+    adw_dialog_set_follows_content_size(dialog, TRUE);
+
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+    gtk_widget_set_margin_start(box, 24);
+    gtk_widget_set_margin_end(box, 24);
+    gtk_widget_set_margin_top(box, 6);
+    gtk_widget_set_margin_bottom(box, 24);
+    // Wrapping labels that ask for little width, so the command row sets it.
+    auto text = [box](const char *s, const char *css_class = nullptr) {
+        GtkWidget *label = gtk_label_new(s);
+        gtk_label_set_wrap(GTK_LABEL(label), TRUE);
+        gtk_label_set_max_width_chars(GTK_LABEL(label), 30);
+        gtk_label_set_xalign(GTK_LABEL(label), 0);
+        if (css_class)
+            gtk_widget_add_css_class(label, css_class);
+        gtk_box_append(GTK_BOX(box), label);
+        return label;
+    };
+    text("Steam doesn’t pass GTKdrop’s mods folder on to the game, so it would start with the default Mods folder "
+         "instead of this profile.");
+    text("In Steam, right-click Stardew Valley → Properties → General, and paste this into Launch Options:");
+
     GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-    // The whole command, wrapped if it must, and selectable: a single-line entry would hide most of it.
     GtkWidget *command = gtk_label_new(options.c_str());
     gtk_label_set_selectable(GTK_LABEL(command), TRUE);
-    gtk_label_set_wrap(GTK_LABEL(command), TRUE);
-    gtk_label_set_wrap_mode(GTK_LABEL(command), PANGO_WRAP_WORD_CHAR);
     gtk_label_set_xalign(GTK_LABEL(command), 0);
-    gtk_widget_set_hexpand(command, TRUE);
-    gtk_widget_add_css_class(command, "monospace");
+    gtk_widget_add_css_class(command, "monospace"); // libadwaita's: the system monospace font
     gtk_widget_add_css_class(command, "steam-command");
-    // A selectable label that gets the focus selects all its text; start with nothing selected.
-    g_signal_connect(command, "map", G_CALLBACK(+[](GtkWidget *label, gpointer) {
-        g_idle_add_once([](gpointer l) { gtk_label_select_region(GTK_LABEL(l), 0, 0); }, label);
-    }), nullptr);
+    GtkWidget *scroller = gtk_scrolled_window_new();
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroller), GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
+    gtk_scrolled_window_set_propagate_natural_width(GTK_SCROLLED_WINDOW(scroller), TRUE);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scroller), command);
     GtkWidget *frame = gtk_frame_new(nullptr);
-    gtk_frame_set_child(GTK_FRAME(frame), command);
+    gtk_frame_set_child(GTK_FRAME(frame), scroller);
     gtk_widget_set_hexpand(frame, TRUE);
     GtkWidget *copy = gtk_button_new_from_icon_name("edit-copy-symbolic");
     gtk_widget_set_tooltip_text(copy, "Copy");
@@ -1567,20 +1581,40 @@ void MainWindow::show_steam_setup(bool then_launch) {
     }), nullptr);
     gtk_box_append(GTK_BOX(row), frame);
     gtk_box_append(GTK_BOX(row), copy);
-    adw_alert_dialog_set_extra_child(ADW_ALERT_DIALOG(dialog), row);
+    gtk_box_append(GTK_BOX(box), row);
+
+    text("It’s needed once. Only launches from GTKdrop use a profile; starting the game from Steam itself still "
+         "uses the default Mods folder.", "dim-label");
+
+    GtkWidget *focus = copy;
     if (then_launch) {
-        adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", "_Cancel", "launch", "I’ve Set It, _Launch",
-                                       nullptr);
-        adw_alert_dialog_set_response_appearance(ADW_ALERT_DIALOG(dialog), "launch", ADW_RESPONSE_SUGGESTED);
-    } else {
-        adw_alert_dialog_add_responses(ADW_ALERT_DIALOG(dialog), "cancel", "_Close", nullptr);
-    }
-    adw_alert_dialog_set_close_response(ADW_ALERT_DIALOG(dialog), "cancel");
-    g_signal_connect(dialog, "response", G_CALLBACK(+[](AdwAlertDialog *, const char *response, gpointer self) {
-        if (std::string_view(response) == "launch")
+        GtkWidget *buttons = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
+        gtk_widget_set_halign(buttons, GTK_ALIGN_END);
+        gtk_widget_set_margin_top(buttons, 12);
+        GtkWidget *cancel = gtk_button_new_with_mnemonic("_Cancel");
+        GtkWidget *launch = gtk_button_new_with_mnemonic("I’ve Set It, _Launch");
+        gtk_widget_add_css_class(launch, "suggested-action");
+        for (GtkWidget *b: {cancel, launch}) {
+            gtk_widget_add_css_class(b, "pill");
+            gtk_box_append(GTK_BOX(buttons), b);
+        }
+        g_signal_connect_swapped(cancel, "clicked", G_CALLBACK(adw_dialog_close), dialog);
+        g_object_set_data(G_OBJECT(launch), "dialog", dialog);
+        g_signal_connect(launch, "clicked", G_CALLBACK(+[](GtkButton *b, gpointer self) {
+            adw_dialog_close(ADW_DIALOG(g_object_get_data(G_OBJECT(b), "dialog")));
             static_cast<MainWindow *>(self)->launch_with(gtkdrop::LaunchMethod::Steam, true);
-    }), this);
+        }), this);
+        gtk_box_append(GTK_BOX(box), buttons);
+        adw_dialog_set_default_widget(dialog, launch);
+        focus = launch;
+    }
+
+    GtkWidget *toolbar = adw_toolbar_view_new();
+    adw_toolbar_view_add_top_bar(ADW_TOOLBAR_VIEW(toolbar), adw_header_bar_new());
+    adw_toolbar_view_set_content(ADW_TOOLBAR_VIEW(toolbar), box);
+    adw_dialog_set_child(dialog, toolbar);
     adw_dialog_present(dialog, GTK_WIDGET(window_));
+    adw_dialog_set_focus(dialog, focus); // not the selectable command, which would open all selected
 }
 
 void MainWindow::launch_with(gtkdrop::LaunchMethod method, bool steam_setup_shown) {
