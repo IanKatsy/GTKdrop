@@ -35,11 +35,11 @@ const char *level_name(GLogLevelFlags level) {
     return "DEBUG";
 }
 
+#ifdef GTKDROP_STACKTRACES
 bool is_problem(GLogLevelFlags level) {
     return level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL | G_LOG_LEVEL_WARNING);
 }
 
-#ifdef GTKDROP_STACKTRACES
 std::string stack_trace() {
     std::string out = "  Stack trace:\n";
     int shown = 0;
