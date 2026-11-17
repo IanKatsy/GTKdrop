@@ -31,6 +31,16 @@
   box-shadow: none;
 }
 
+/* --- Other available mods (collection profiles) -------------------------------------- */
+
+.card.available-card {
+  padding: 8px 12px;
+}
+
+.card.available-card list.boxed-list {
+  margin: 1px; /* room for the list's own outline inside the scrolled window */
+}
+
 /* --- Update status ----------------------------------------------------------------- */
 
 .mod-status-update {

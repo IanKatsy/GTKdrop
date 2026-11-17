@@ -181,6 +181,10 @@ private:
     bool matches(GtkdropModItem *mod) const;
     bool passes_source_filter(GtkdropModItem *mod) const;
     void update_source_visibility();
+    // Collection profiles: the card under the mod list with installed mods the collection doesn't use.
+    void setup_available_card();
+    void rebuild_available();
+    void add_to_profile(guint mod_index);
     void set_all_enabled(bool enabled);
     void show_context_menu(double x, double y);
     void confirm_delete(GtkdropModItem *mod);
@@ -303,6 +307,10 @@ private:
     GtkLabel *smapi_label_ = nullptr;
     GtkWidget *smapi_button_ = nullptr;
     GtkWidget *content_box_ = nullptr;
+    GtkWidget *available_card_ = nullptr;
+    GtkLabel *available_title_ = nullptr;
+    GtkListBox *available_list_ = nullptr;
+    GtkSearchEntry *available_search_ = nullptr;
 };
 
 MainWindow::MainWindow(GtkApplication *app) {
@@ -328,6 +336,11 @@ MainWindow::MainWindow(GtkApplication *app) {
     smapi_label_ = GTK_LABEL(get("smapi_label"));
     smapi_button_ = GTK_WIDGET(get("smapi_button"));
     content_box_ = GTK_WIDGET(get("content_box"));
+    available_card_ = GTK_WIDGET(get("available_card"));
+    available_title_ = GTK_LABEL(get("available_title"));
+    available_list_ = GTK_LIST_BOX(get("available_list"));
+    available_search_ = GTK_SEARCH_ENTRY(get("available_search"));
+    setup_available_card();
     nexus_button_ = GTK_BUTTON(get("nexus_button"));
     update_status_button_ = GTK_BUTTON(get("update_status_button"));
     gtk_label_set_label(GTK_LABEL(get("version_label")), GTKDROP_VERSION); // see build_info.h
@@ -857,6 +870,119 @@ void MainWindow::update_source_visibility() {
         g_object_unref(item);
     }
     gtk_widget_set_visible(GTK_WIDGET(show_all_sources_), any_collection_mods);
+    rebuild_available();
+}
+
+void MainWindow::setup_available_card() {
+    gtk_list_box_set_placeholder(available_list_, [] {
+        GtkWidget *label = gtk_label_new("No other installed mods");
+        gtk_widget_add_css_class(label, "dim-label");
+        gtk_widget_set_margin_top(label, 12);
+        gtk_widget_set_margin_bottom(label, 12);
+        return label;
+    }());
+    gtk_list_box_set_filter_func(available_list_, [](GtkListBoxRow *row, gpointer data) -> gboolean {
+        auto *self = static_cast<MainWindow *>(data);
+        const char *query = gtk_editable_get_text(GTK_EDITABLE(self->available_search_));
+        if (!query || !*query)
+            return TRUE;
+        auto *text = static_cast<const char *>(g_object_get_data(G_OBJECT(row), "search-text"));
+        char *needle = g_utf8_casefold(query, -1);
+        const bool hit = text && strstr(text, needle);
+        g_free(needle);
+        return hit;
+    }, this, nullptr);
+    g_signal_connect_swapped(available_search_, "search-changed", G_CALLBACK(+[](MainWindow *self) {
+        gtk_list_box_invalidate_filter(self->available_list_);
+    }), this);
+}
+
+// Everything installed that the collection's list doesn't show: loose mods and other collections' copies, minus
+// any whose UniqueID the list already has (SMAPI refuses two copies of one mod).
+void MainWindow::rebuild_available() {
+    const gtkdrop::Profile &profile = manager_.active();
+    gtk_widget_set_visible(available_card_, profile.is_from_collection());
+    gtk_list_box_remove_all(available_list_);
+    if (!profile.is_from_collection())
+        return;
+
+    std::set<std::string> taken;
+    std::vector<std::pair<std::string, guint>> candidates; // sort key, mod index
+    GListModel *model = G_LIST_MODEL(mods_);
+    for (guint i = 0; i < g_list_model_get_n_items(model); ++i) {
+        auto *item = GTKDROP_MOD_ITEM(g_list_model_get_item(model, i));
+        if (g_object_get_data(G_OBJECT(item), "source-visible")) {
+            if (const gtkdrop::Mod *m = mod_for(item))
+                taken.insert(gtkdrop::to_lower(m->unique_id()));
+        }
+        g_object_unref(item);
+    }
+    const auto &mods = manager_.mods();
+    for (guint i = 0; i < mods.size(); ++i)
+        if (!mods[i].unique_id().empty() && !taken.contains(gtkdrop::to_lower(mods[i].unique_id())))
+            candidates.emplace_back(gtkdrop::to_lower(mods[i].name()) + '\x01' + mods[i].collection_name, i);
+    std::ranges::sort(candidates);
+
+    for (const auto &[key, index]: candidates) {
+        const gtkdrop::Mod &m = mods[index];
+        GtkWidget *row = adw_action_row_new();
+        adw_preferences_row_set_use_markup(ADW_PREFERENCES_ROW(row), FALSE);
+        adw_preferences_row_set_title(ADW_PREFERENCES_ROW(row), m.name().c_str());
+        std::string subtitle = m.manifest.version.empty() ? std::string() : m.manifest.version;
+        auto add_part = [&subtitle](const std::string &part) {
+            if (!part.empty())
+                subtitle += (subtitle.empty() ? "" : "  ·  ") + part;
+        };
+        add_part(m.is_from_collection() ? "from the collection “" + m.collection_name + "”" : "installed in Mods");
+        add_part(m.manifest.author.empty() ? std::string() : "by " + m.manifest.author);
+        if (const std::string missing = m.missing_requirements_text(); !missing.empty())
+            add_part("needs " + missing);
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(row), subtitle.c_str());
+        adw_action_row_set_subtitle_lines(ADW_ACTION_ROW(row), 1);
+
+        GtkWidget *button = gtk_button_new_from_icon_name("list-add-symbolic");
+        gtk_widget_set_tooltip_text(button, ("Add to “" + profile.name + "”").c_str());
+        gtk_widget_set_valign(button, GTK_ALIGN_CENTER);
+        gtk_widget_add_css_class(button, "flat");
+        g_object_set_data(G_OBJECT(button), "mod-index", GUINT_TO_POINTER(index));
+        g_signal_connect(button, "clicked", G_CALLBACK(+[](GtkButton *b, gpointer data) {
+            static_cast<MainWindow *>(data)->add_to_profile(
+                    GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(b), "mod-index")));
+        }), this);
+        adw_action_row_add_suffix(ADW_ACTION_ROW(row), button);
+        adw_action_row_set_activatable_widget(ADW_ACTION_ROW(row), button);
+
+        char *search = g_utf8_casefold((m.name() + "\n" + m.manifest.author + "\n" + m.collection_name).c_str(), -1);
+        g_object_set_data_full(G_OBJECT(row), "search-text", search, g_free);
+        gtk_list_box_append(available_list_, row);
+    }
+    char *title = g_strdup_printf("Other Available Mods (%zu)", candidates.size());
+    gtk_label_set_label(available_title_, title);
+    g_free(title);
+}
+
+// Enables that copy in the collection's profile; it moves from the card into the mod list.
+void MainWindow::add_to_profile(guint mod_index) {
+    auto &mods = manager_.mods();
+    if (mod_index >= mods.size())
+        return;
+    gtkdrop::Mod &mod = mods[mod_index];
+    GListModel *model = G_LIST_MODEL(mods_);
+    for (guint i = 0; i < g_list_model_get_n_items(model); ++i) {
+        auto *item = GTKDROP_MOD_ITEM(g_list_model_get_item(model, i));
+        if (GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(item), "mod-index")) == mod_index) {
+            g_object_set_data(G_OBJECT(item), "source-visible", GINT_TO_POINTER(TRUE));
+            gtkdrop_mod_item_set_enabled(item, TRUE); // the row's notify handler enables it in the profile
+        }
+        g_object_unref(item);
+    }
+    if (!mod.enabled) // no row for it (shouldn't happen): enable it directly
+        manager_.set_enabled(mod, true);
+    update_counts();
+    update_save_button();
+    refilter();
+    rebuild_available();
+    toast("Added “" + mod.name() + "” to “" + manager_.active().name + "”");
 }
 
 bool MainWindow::matches(GtkdropModItem *mod) const {

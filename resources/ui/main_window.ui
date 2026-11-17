@@ -505,6 +505,65 @@
                     </child>
                   </object>
                 </child>
+
+                <!-- Collection profiles: the installed mods the collection doesn't have, to add to it -->
+                <child>
+                  <object class="GtkBox" id="available_card">
+                    <property name="orientation">vertical</property>
+                    <property name="visible">false</property>
+                    <style>
+                      <class name="card"/>
+                      <class name="available-card"/>
+                    </style>
+                    <child>
+                      <object class="GtkExpander" id="available_expander">
+                        <property name="label-widget">
+                          <object class="GtkBox">
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkLabel" id="available_title">
+                                <property name="label">Other Available Mods</property>
+                                <style><class name="heading"/></style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="available_hint">
+                                <property name="label">installed mods this collection doesn't use; add one to enable it in this profile</property>
+                                <property name="ellipsize">end</property>
+                                <style><class name="dim-label"/></style>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">6</property>
+                            <property name="margin-top">6</property>
+                            <child>
+                              <object class="GtkSearchEntry" id="available_search">
+                                <property name="placeholder-text">Filter available mods</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkScrolledWindow">
+                                <property name="hscrollbar-policy">never</property>
+                                <property name="propagate-natural-height">true</property>
+                                <property name="max-content-height">260</property>
+                                <child>
+                                  <object class="GtkListBox" id="available_list">
+                                    <property name="selection-mode">none</property>
+                                    <style><class name="boxed-list"/></style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </property>
           </object>
