@@ -294,13 +294,17 @@ bool ModManager::switch_profile(const std::string &name) {
     return true;
 }
 
-bool ModManager::add_profile(const std::string &name, bool copy_active, std::string *error) {
+bool ModManager::add_profile(const std::string &name, bool copy_active, std::string *error, bool keep_collection) {
     Profile profile;
     if (copy_active) {
         // A copy of a collection's profile stays tied to the collection (its mods, Other Available Mods), but is
         // the user's: renamable, deletable, and left alone when the collection updates.
         profile = active();
         profile.is_protected = false;
+        if (!keep_collection) {
+            profile.source_id.clear();
+            profile.pending_nexus_ids.clear(); // the collection's missing mods are its business
+        }
     }
     profile.name = name;
     if (name.empty() || store_.name_taken(name)) {

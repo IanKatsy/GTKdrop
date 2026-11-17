@@ -105,6 +105,7 @@ struct ProfilesDialog {
     AdwPreferencesGroup *list_group;
     GtkWidget *name_row;
     GtkWidget *copy_row;
+    GtkWidget *collection_row; // copying a collection's profile: keep the copy tied to the collection
     std::vector<GtkWidget *> rows;
     ModManager &manager;
     std::function<void()> on_changed;
@@ -166,7 +167,8 @@ void ProfilesDialog::rebuild() {
 void ProfilesDialog::add() {
     char *name = g_strstrip(g_strdup(gtk_editable_get_text(GTK_EDITABLE(name_row))));
     std::string error;
-    if (manager.add_profile(name, adw_switch_row_get_active(ADW_SWITCH_ROW(copy_row)), &error)) {
+    if (manager.add_profile(name, adw_switch_row_get_active(ADW_SWITCH_ROW(copy_row)), &error,
+                            adw_switch_row_get_active(ADW_SWITCH_ROW(collection_row)))) {
         gtk_editable_set_text(GTK_EDITABLE(name_row), "");
         dialog_toast(dialog, std::string("Added “") + name + "”");
         changed();
@@ -317,8 +319,23 @@ void show_profiles_dialog(GtkWidget *parent, ModManager &manager, std::function<
     GtkWidget *copy_row = adw_switch_row_new();
     adw_preferences_row_set_title(ADW_PREFERENCES_ROW(copy_row), "Copy the Current Profile");
     adw_action_row_set_subtitle(ADW_ACTION_ROW(copy_row), "Start with its enabled mods, notes and mod configs");
+    // Only for a collection's profile (or a copy of one), and only when copying it.
+    GtkWidget *collection_row = adw_switch_row_new();
+    adw_preferences_row_set_title(ADW_PREFERENCES_ROW(collection_row), "Keep It a Collection Profile");
+    adw_action_row_set_subtitle(ADW_ACTION_ROW(collection_row),
+                                "On: shows the collection’s mods and Other Available Mods. Off: a normal profile "
+                                "that enables the same mods");
+    adw_switch_row_set_active(ADW_SWITCH_ROW(collection_row), TRUE);
+    const bool from_collection = manager.active().is_from_collection();
+    gtk_widget_set_visible(collection_row, FALSE);
+    if (from_collection) {
+        g_object_bind_property(copy_row, "active", collection_row, "visible", G_BINDING_SYNC_CREATE);
+        adw_action_row_set_subtitle(ADW_ACTION_ROW(copy_row), ("Start with “" + manager.active().name +
+                                                                "”’s enabled mods, notes and mod configs").c_str());
+    }
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(add_group), name_row);
     adw_preferences_group_add(ADW_PREFERENCES_GROUP(add_group), copy_row);
+    adw_preferences_group_add(ADW_PREFERENCES_GROUP(add_group), collection_row);
 
     GtkWidget *list_group = adw_preferences_group_new();
     adw_preferences_group_set_title(ADW_PREFERENCES_GROUP(list_group), "Profiles");
@@ -328,7 +345,7 @@ void show_profiles_dialog(GtkWidget *parent, ModManager &manager, std::function<
     adw_preferences_dialog_add(ADW_PREFERENCES_DIALOG(dialog), ADW_PREFERENCES_PAGE(page));
 
     auto *pd = new ProfilesDialog{ADW_PREFERENCES_DIALOG(dialog), ADW_PREFERENCES_GROUP(list_group), name_row,
-                                  copy_row, {}, manager, std::move(on_changed)};
+                                  copy_row, collection_row, {}, manager, std::move(on_changed)};
     g_object_set_data_full(G_OBJECT(dialog), "state", pd, [](gpointer p) { delete static_cast<ProfilesDialog *>(p); });
     g_signal_connect_swapped(name_row, "apply", G_CALLBACK(+[](ProfilesDialog *pd) { pd->add(); }), pd);
     g_signal_connect_swapped(name_row, "entry-activated", G_CALLBACK(+[](ProfilesDialog *pd) { pd->add(); }), pd);

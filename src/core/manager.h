@@ -60,7 +60,10 @@ public:
 
     // Switching with unsaved changes (auto-save off) discards them; ask before calling.
     bool switch_profile(const std::string &name);
-    bool add_profile(const std::string &name, bool copy_active, std::string *error = nullptr);
+    // copy_active: start from the active profile. A copy of a collection's profile stays tied to the collection
+    // unless `keep_collection` is false: then it's a plain profile that just enables the same copies.
+    bool add_profile(const std::string &name, bool copy_active, std::string *error = nullptr,
+                     bool keep_collection = true);
     bool rename_profile(const std::string &old_name, const std::string &new_name, std::string *error = nullptr);
     bool delete_profile(const std::string &name, std::string *error = nullptr);
     void save_active();
