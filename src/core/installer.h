@@ -49,6 +49,10 @@ void install_archives(const fs::path &download_dir, InstallTarget target, std::f
 void install_files(std::vector<fs::path> sources, const fs::path &work_dir, InstallTarget target,
                    std::function<void(InstallResult)> done, std::function<void(const std::string &)> log = {});
 
+// Copies a mod folder to `to` (which must not exist), through a temporary folder next to it so a failed copy
+// leaves nothing half-done. Blocking: run it off the main thread for big mods.
+bool copy_mod_folder(const fs::path &from, const fs::path &to, std::string &error);
+
 // download_dir/.installed: the archives installed from it.
 std::vector<std::string> installed_archive_names(const fs::path &download_dir);
 // Deletes the archives in `download_dir` that .installed lists.

@@ -185,6 +185,7 @@ private:
     void setup_available_card();
     void rebuild_available();
     void add_to_profile(guint mod_index);
+    void copy_into_collection(guint mod_index, GtkWidget *button);
     void set_all_enabled(bool enabled);
     void show_context_menu(double x, double y);
     void confirm_delete(GtkdropModItem *mod);
@@ -949,6 +950,18 @@ void MainWindow::rebuild_available() {
             static_cast<MainWindow *>(data)->add_to_profile(
                     GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(b), "mod-index")));
         }), this);
+        GtkWidget *pin = gtk_button_new_from_icon_name("view-pin-symbolic");
+        gtk_widget_set_tooltip_text(pin, ("Add Permanently: copy it into “" + profile.name +
+                                          "”’s own folder, so it stays at this version when the original "
+                                          "changes").c_str());
+        gtk_widget_set_valign(pin, GTK_ALIGN_CENTER);
+        gtk_widget_add_css_class(pin, "flat");
+        g_object_set_data(G_OBJECT(pin), "mod-index", GUINT_TO_POINTER(index));
+        g_signal_connect(pin, "clicked", G_CALLBACK(+[](GtkButton *b, gpointer data) {
+            static_cast<MainWindow *>(data)->copy_into_collection(
+                    GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(b), "mod-index")), GTK_WIDGET(b));
+        }), this);
+        adw_action_row_add_suffix(ADW_ACTION_ROW(row), pin);
         adw_action_row_add_suffix(ADW_ACTION_ROW(row), button);
         adw_action_row_set_activatable_widget(ADW_ACTION_ROW(row), button);
 
@@ -959,6 +972,76 @@ void MainWindow::rebuild_available() {
     char *title = g_strdup_printf("Other Available Mods (%zu)", candidates.size());
     gtk_label_set_label(available_title_, title);
     g_free(title);
+}
+
+// A copy of the mod in the collection's own folder: it's the collection's from then on (enabled in its profile on
+// the rescan, pinned at this version, out of other profiles). Copied off the main thread; big mods take a while.
+void MainWindow::copy_into_collection(guint mod_index, GtkWidget *button) {
+    const auto &mods = manager_.mods();
+    const gtkdrop::Profile &profile = manager_.active();
+    if (mod_index >= mods.size() || !profile.is_from_collection())
+        return;
+    const gtkdrop::Mod &mod = mods[mod_index];
+    const fs::path dir = manager_.settings().effective_collections_dir() / profile.source_id;
+    fs::path to = dir / mod.folder.filename();
+    std::error_code ec;
+    for (int n = 2; fs::exists(to, ec); ++n) // another mod's folder has the name
+        to = dir / (mod.folder.filename().string() + " (" + std::to_string(n) + ")");
+
+    // Its library record carries over, so the copy keeps its Nexus mod and file.
+    gtkdrop::LibraryEntry entry;
+    if (const gtkdrop::LibraryEntry *from = manager_.library().find_folder(mod.folder)) {
+        entry = *from;
+        entry.settings_for.clear();
+    } else {
+        entry.archive = mod.folder.filename().string();
+        entry.origin = "local";
+        entry.nexus_mod_id = mod.manifest_nexus_id();
+    }
+    entry.source_id = profile.source_id;
+    entry.installed_at.clear();
+    entry.mods = {{to}};
+
+    struct Copy {
+        MainWindow *self;
+        fs::path from, to;
+        std::string name, profile, error;
+        gtkdrop::LibraryEntry entry;
+        GtkWidget *button; // weak: the card may be rebuilt meanwhile
+        bool ok = false;
+    };
+    auto *c = new Copy{this, mod.folder, to, mod.name(), profile.name, {}, std::move(entry), button};
+    gtk_widget_set_sensitive(button, FALSE);
+    g_object_add_weak_pointer(G_OBJECT(button), reinterpret_cast<gpointer *>(&c->button));
+    toast("Copying “" + c->name + "” into “" + c->profile + "”…");
+    g_message("Add permanently: %s -> %s", c->from.c_str(), c->to.c_str());
+
+    GTask *task = g_task_new(nullptr, nullptr, [](GObject *, GAsyncResult *, gpointer data) {
+        auto *c = static_cast<Copy *>(data);
+        if (c->button) {
+            g_object_remove_weak_pointer(G_OBJECT(c->button), reinterpret_cast<gpointer *>(&c->button));
+            gtk_widget_set_sensitive(c->button, TRUE);
+        }
+        MainWindow *self = c->self;
+        if (!c->ok) {
+            g_warning("Add permanently: %s", c->error.c_str());
+            self->toast("Couldn't copy “" + c->name + "”: " + c->error);
+        } else {
+            self->manager_.library().add(std::move(c->entry));
+            self->manager_.flush();
+            self->manager_.rescan(); // the collection's profile enables everything in its folder
+            self->populate_mods();
+            self->toast("“" + c->name + "” is now part of “" + c->profile + "”");
+        }
+        delete c;
+    }, c);
+    g_task_set_task_data(task, c, nullptr);
+    g_task_run_in_thread(task, [](GTask *task, gpointer, gpointer data, GCancellable *) {
+        auto *c = static_cast<Copy *>(data);
+        c->ok = gtkdrop::copy_mod_folder(c->from, c->to, c->error);
+        g_task_return_boolean(task, c->ok);
+    });
+    g_object_unref(task);
 }
 
 // Enables that copy in the collection's profile; it moves from the card into the mod list.

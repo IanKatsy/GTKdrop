@@ -391,6 +391,29 @@ void install_files(std::vector<fs::path> sources, const fs::path &work_dir, Inst
     next_archive(run);
 }
 
+bool copy_mod_folder(const fs::path &from, const fs::path &to, std::string &error) {
+    std::error_code ec;
+    if (fs::exists(to, ec)) {
+        error = to.string() + " already exists";
+        return false;
+    }
+    const fs::path tmp = to.parent_path() / ("." + to.filename().string() + ".copying");
+    fs::remove_all(tmp, ec);
+    fs::create_directories(to.parent_path(), ec);
+    fs::copy(from, tmp, fs::copy_options::recursive | fs::copy_options::copy_symlinks, ec);
+    if (!ec) {
+        make_writable(tmp);
+        fs::rename(tmp, to, ec);
+    }
+    if (ec) {
+        error = ec.message();
+        std::error_code ignore;
+        fs::remove_all(tmp, ignore);
+        return false;
+    }
+    return true;
+}
+
 std::vector<std::string> installed_archive_names(const fs::path &download_dir) {
     std::vector<std::string> names;
     if (auto list = read_text_file(download_dir / ".installed"))
