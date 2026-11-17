@@ -8,6 +8,20 @@
   min-height: 46px;
 }
 
+/* --- Header bar ------------------------------------------------------------------ */
+
+/* Switching profile changes the title's length, and GTK's redraw of a shrinking label can miss the edges of the
+   old glyphs (their ink reaches past the text's bounds), leaving stray pixels until the next full redraw. A
+   background on the title box, in the header bar's own colour, makes the whole old box part of the redraw. */
+headerbar windowtitle {
+  background-color: var(--headerbar-bg-color);
+  padding: 0 6px;
+}
+
+headerbar windowtitle:backdrop {
+  background-color: var(--headerbar-backdrop-color);
+}
+
 /* --- Mod list ------------------------------------------------------------------ */
 
 /* Only the card's outer corners are rounded; the header buttons and rows inside are square. */
