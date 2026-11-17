@@ -169,15 +169,21 @@ const Mod *find_by_nexus_id(const std::vector<Mod> &mods, int nexus_id, const st
 
 bool ModManager::resolve_pending_collection_mods(Profile &profile) {
     bool changed_any = false;
-    // Everything in the collection's own folder is the collection's: enabled in its profile. (Matching by Nexus ID
-    // alone misses many: manifests often say "Nexus:???" or another mod's ID.)
-    if (profile.is_from_collection())
-        for (const auto &m: mods_)
-            if (iequals(m.source_id, profile.source_id) && !m.unique_id().empty() &&
-                std::ranges::find(profile.enabled, m.reference()) == profile.enabled.end()) {
+    // Everything the collection installed into its own folder is enabled in its own profile. (Matching by Nexus ID
+    // alone misses many: manifests often say "Nexus:???" or another mod's ID.) Not in copies of it, whose mods are
+    // the user's choice, and not mods pinned there with Add Permanently, which the profile adding them enables.
+    if (profile.is_from_collection() && profile.is_protected)
+        for (const auto &m: mods_) {
+            if (!iequals(m.source_id, profile.source_id) || m.unique_id().empty() ||
+                std::ranges::find(profile.enabled, m.reference()) != profile.enabled.end())
+                continue;
+            if (const LibraryEntry *e = library_.find_folder(m.folder); e && e->origin == "pinned")
+                continue;
+            {
                 profile.enabled.push_back(m.reference());
                 changed_any = true;
             }
+        }
     std::erase_if(profile.pending_nexus_ids, [&](int id) {
         const Mod *m = find_by_nexus_id(mods_, id, profile.source_id);
         if (!m)
@@ -194,7 +200,7 @@ std::string ModManager::import_collection(const nexus::Collection &collection, b
     const std::string source_id = std::string(nexus::kGameDomain) + "-" + collection.slug;
     Profile *profile = nullptr;
     for (const auto &p: store_.profiles())
-        if (iequals(p.source_id, source_id))
+        if (iequals(p.source_id, source_id) && p.is_protected) // the collection's own, not a user's copy
             profile = store_.find(p.name);
 
     if (created)
@@ -291,9 +297,10 @@ bool ModManager::switch_profile(const std::string &name) {
 bool ModManager::add_profile(const std::string &name, bool copy_active, std::string *error) {
     Profile profile;
     if (copy_active) {
+        // A copy of a collection's profile stays tied to the collection (its mods, Other Available Mods), but is
+        // the user's: renamable, deletable, and left alone when the collection updates.
         profile = active();
         profile.is_protected = false;
-        profile.source_id.clear();
     }
     profile.name = name;
     if (name.empty() || store_.name_taken(name)) {

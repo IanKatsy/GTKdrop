@@ -30,7 +30,8 @@ struct LibraryMod {
 
 struct LibraryEntry {
     std::string archive;     // the archive's file name (or the folder's name, for one added by hand)
-    std::string origin;      // "nexus" (downloaded by GTKdrop) or "local" (Add Mods)
+    std::string origin;      // "nexus" (downloaded by GTKdrop), "local" (Add Mods) or "pinned" (Add Permanently:
+                             // copied into a collection's folder from another copy)
     int nexus_mod_id = 0;    // 0 when unknown
     int nexus_file_id = 0;
     std::string source_id;   // "" for loose mods, else the collection's ("stardewvalley-<slug>")

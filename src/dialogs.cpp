@@ -131,7 +131,7 @@ void ProfilesDialog::rebuild() {
         if (p.name == manager.active().name)
             subtitle += " · active";
         if (p.is_from_collection())
-            subtitle += " · from a collection";
+            subtitle += p.is_protected ? " · from a collection" : " · copy of a collection";
         GtkWidget *row = plain_action_row(p.name, subtitle);
 
         auto *data = new ProfileRef(this, p.name);

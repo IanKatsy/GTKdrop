@@ -995,9 +995,9 @@ void MainWindow::copy_into_collection(guint mod_index, GtkWidget *button) {
         entry.settings_for.clear();
     } else {
         entry.archive = mod.folder.filename().string();
-        entry.origin = "local";
         entry.nexus_mod_id = mod.manifest_nexus_id();
     }
+    entry.origin = "pinned"; // the collection's own profile doesn't take it up by itself; this one enables it
     entry.source_id = profile.source_id;
     entry.installed_at.clear();
     entry.mods = {{to}};
@@ -1029,7 +1029,14 @@ void MainWindow::copy_into_collection(guint mod_index, GtkWidget *button) {
         } else {
             self->manager_.library().add(std::move(c->entry));
             self->manager_.flush();
-            self->manager_.rescan(); // the collection's profile enables everything in its folder
+            self->manager_.rescan();
+            // Enabled in the profile that added it (the collection's own one or a copy, if still active).
+            if (self->manager_.active().name == c->profile)
+                for (auto &m: self->manager_.mods()) {
+                    std::error_code ec;
+                    if (fs::equivalent(m.folder, c->to, ec))
+                        self->manager_.set_enabled(m, true);
+                }
             self->populate_mods();
             self->toast("“" + c->name + "” is now part of “" + c->profile + "”");
         }
