@@ -4,6 +4,9 @@
     <file>ui/main_window.ui</file>
     <file>style.css</file>
     <file>images/smapi.png</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/view-pin-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/web-browser-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/external-link-symbolic.svg</file>
     <file>themes/Buttercup Sky.json</file>
     <file>themes/CASH MONEY.json</file>
     <file>themes/Catpuccin Mocha.json</file>
